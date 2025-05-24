@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  sharesubweb:
+    image: ghcr.io/nariahlamb/sharesubweb:latest
+    container_name: sharesubweb
+    volumes:
+      - ./config:/app/config
+      - ./output:/app/output
+    ports:
+      - "8199:8199"
+    environment:
+      - TZ=Asia/Shanghai
+      # 可选环境变量
+      # - HTTP_PROXY=http://192.168.1.1:7890
+      # - HTTPS_PROXY=http://192.168.1.1:7890
+      # - API_KEY=your_api_key
+    restart: always 

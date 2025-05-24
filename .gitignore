@@ -1,0 +1,22 @@
+# 编译输出
+/bin
+/output
+/dist
+
+# 依赖目录
+/vendor
+
+# 配置文件，避免提交个人信息
+/config/config.yaml
+
+# 日志文件
+*.log
+
+# macOS文件
+.DS_Store
+
+# IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo 

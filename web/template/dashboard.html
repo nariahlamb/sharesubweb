@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}} - 仪表盘</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>{{.title}}</h1>
+            <nav>
+                <ul>
+                    <li><a href="/dashboard">仪表盘</a></li>
+                    <li><a href="/dashboard/subscriptions">订阅管理</a></li>
+                    <li><a href="/dashboard/nodes">节点管理</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <section class="stats">
+                <div class="stat-card">
+                    <h3>订阅数量</h3>
+                    <p class="stat-value">{{.subCount}}</p>
+                </div>
+                <div class="stat-card">
+                    <h3>总节点数</h3>
+                    <p class="stat-value">{{.totalNodes}}</p>
+                </div>
+                <div class="stat-card">
+                    <h3>可用节点数</h3>
+                    <p class="stat-value">{{.activeNodes}}</p>
+                </div>
+            </section>
+            
+            <section class="actions">
+                <h2>快速操作</h2>
+                <div class="action-buttons">
+                    <a href="/dashboard/subscriptions" class="btn">管理订阅</a>
+                    <a href="/dashboard/nodes" class="btn">查看节点</a>
+                    <form action="/dashboard/subscriptions/refresh-all" method="post">
+                        <button type="submit" class="btn">刷新所有订阅</button>
+                    </form>
+                    <form action="/dashboard/nodes/check-all" method="post">
+                        <button type="submit" class="btn">测试所有节点</button>
+                    </form>
+                    <form action="/dashboard/output/generate" method="post">
+                        <button type="submit" class="btn">生成订阅文件</button>
+                    </form>
+                </div>
+            </section>
+            
+            <section class="subscription-links">
+                <h2>订阅链接</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>格式</th>
+                            <th>链接</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Clash</td>
+                            <td><code>{{.baseUrl}}/sub/clash.yaml</code></td>
+                            <td><a href="/sub/clash.yaml" target="_blank">下载</a></td>
+                        </tr>
+                        <tr>
+                            <td>Mihomo</td>
+                            <td><code>{{.baseUrl}}/sub/mihomo.yaml</code></td>
+                            <td><a href="/sub/mihomo.yaml" target="_blank">下载</a></td>
+                        </tr>
+                        <tr>
+                            <td>SingBox</td>
+                            <td><code>{{.baseUrl}}/sub/singbox.json</code></td>
+                            <td><a href="/sub/singbox.json" target="_blank">下载</a></td>
+                        </tr>
+                        <tr>
+                            <td>V2ray</td>
+                            <td><code>{{.baseUrl}}/sub/v2ray.txt</code></td>
+                            <td><a href="/sub/v2ray.txt" target="_blank">下载</a></td>
+                        </tr>
+                        <tr>
+                            <td>Base64</td>
+                            <td><code>{{.baseUrl}}/sub/base64.txt</code></td>
+                            <td><a href="/sub/base64.txt" target="_blank">下载</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2023 ShareSubWeb. 版本 {{.version}}</p>
+        </footer>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 

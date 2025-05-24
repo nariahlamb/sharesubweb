@@ -1,0 +1,68 @@
+# 基本设置
+app:
+  name: "ShareSubWeb"
+  port: 8199
+  api-key: "" # 可选的API密钥，为空则不启用验证
+
+# 订阅源配置
+subscriptions:
+- name: "订阅1"
+  url: ""
+  type: "clash" # 可选：clash, v2ray, ss, ssr, trojan
+  remarks: "我的主要订阅"
+
+# 节点测试配置
+node-check:
+  # 并发测试数量
+  concurrency: 50
+  # 连接超时（秒）
+  timeout: 5
+  # 测试间隔（分钟）
+  interval: 30
+  # 测试API访问性
+  api-test:
+    enable: true
+    targets:
+    - name: "OpenAI"
+      url: "https://api.openai.com"
+    - name: "Gemini"
+      url: "https://generativelanguage.googleapis.com"
+  # IP质量测试
+  ip-quality:
+    enable: true
+    timeout: 10
+
+# 节点处理配置
+node-process:
+  # 节点重命名
+  rename:
+    enable: true
+    add-prefix: ""
+    add-suffix: ""
+    template: "{名称}|{国家}{速度}{API}"
+  # 节点过滤
+  filter:
+    enable: true
+    include-keywords: []
+    exclude-keywords: []
+
+# 输出配置
+output:
+  # 保存方法：local, webdav
+  save-method: "local"
+  # 本地保存路径
+  local-path: "./output"
+  # WebDAV配置
+  webdav:
+    url: ""
+    username: ""
+    password: ""
+    directory: "/"
+  # 聚合订阅格式
+  formats:
+  - type: "clash"
+    enable: true
+  - type: "singbox"
+    enable: true
+  - type: "v2ray"
+    enable: true
