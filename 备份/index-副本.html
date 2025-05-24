@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订阅分享平台 - 登录</title>
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <style>
+        body {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            font-size: calc(16px + 0.5vw);
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary {
+            background-color: #ff6f61;
+            border: none;
+            box-shadow: 0px 5px 15px rgba(255, 111, 97, 0.4);
+        }
+        .btn-primary:hover {
+            background-color: #ff8e7f;
+        }
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-size: calc(12px + 0.3vw);
+        }
+        h1 {
+            font-size: calc(24px + 1.5vw);
+        }
+        p.lead {
+            font-size: calc(16px + 0.8vw);
+        }
+        button {
+            font-size: calc(14px + 0.5vw);
+        }
+        #userGuidelinesModal .modal-content {
+            background: rgba(255, 255, 255, 0.9);
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container animate__animated animate__fadeIn">
+        <h1 class="display-4 animate__animated animate__zoomIn animate__delay-1s">欢迎来到订阅分享平台</h1>
+        <p class="lead animate__animated animate__fadeInUp animate__delay-2s">通过OAuth2登录并开始分享您的订阅链接。</p>
+        <hr class="my-4">
+        <button id="loginButton" class="btn btn-primary btn-lg animate__animated animate__pulse animate__infinite">使用OAuth2登录</button>
+    </div>
+    <div class="footer">
+        power by Drlinzefeng
+    </div>
+
+    <!-- 用户守则弹出框 -->
+    <div class="modal fade" id="userGuidelinesModal" tabindex="-1" aria-labelledby="userGuidelinesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userGuidelinesModalLabel">用户守则</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>该定一下规则了（2024-11-12 04:00 开始执行）</p>
+                    <ol>
+                        <li>根据要求规定用户拉取订阅 IP 数量单日不能超过 5 个（所以大家要设置本机不通过代理拉取，这个规则强制限制！！！）</li>
+                        <li>单订阅拉取单日不超过 30 次（比 1h 一次多一点点）（由于误封实在太多，很多小白不会调整订阅间隔，这个规则暂时没有实行）</li>
+                        <li>大家如果上传机场面板（一般都有做 UA 识别兼容的）导出的订阅链接，则大概率不会导致错误，如果想直接分享链接的（例如 ss://、vmess://、hysteria2:// 等）要经过订阅转换。本机代理后不会给机场传递用户 IP，只会显示代理后的 IP（我知道这样会漏源，请大家不要打我）防止机场觉得过多用户订阅</li>
+                        <li>我每天（随机时间）会清理部分对于我的部署服务器来说无法正常拉取的节点（半自动化有个很丑的面板，可能会误伤，但是存下来的基本上都是活的）</li>
+                    </ol>
+                    <p>暂时就这么多，建议大家遵守如果有意见可以评论区提一下（<a href="https://linux.do/t/topic/255350" target="_blank">https://linux.do/t/topic/255350</a>）<a href="https://paypal.me/share899" target="_blank">点击这里paypal分摊服务器开销。</a></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">我已知晓</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载时显示用户守则弹出框
+        window.addEventListener('load', (event) => {
+            var userGuidelinesModal = new bootstrap.Modal(document.getElementById('userGuidelinesModal'));
+            userGuidelinesModal.show();
+
+            // 检查登录状态
+            fetch("login.php") // 根据实际 API 路径调整
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    }
+                })
+                .catch(error => console.error("Error checking login status:", error));
+        });
+
+        // 登录按钮点击事件处理
+        document.getElementById("loginButton").addEventListener("click", function() {
+            fetch("login.php?action=login") // 根据实际 API 路径调整
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.authUrl) {
+                        window.location.href = data.authUrl;
+                    } else if (data.redirect) {
+                        window.location.href = data.redirect;
+                    } else {
+                        console.error("No authUrl or redirect found in response:", data);
+                    }
+                })
+                .catch(error => alert("Error fetching the login URL: " + error.message));
+        });
+    </script>
+</body>
+</html>

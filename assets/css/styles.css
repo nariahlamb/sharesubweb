@@ -1,0 +1,14 @@
+/* assets/css/styles.css */
+
+/* 自定义样式 */
+.table th, .table td {
+    vertical-align: middle;
+}
+
+.copy-btn {
+    margin-left: 10px;
+}
+
+.toast {
+    min-width: 150px;
+}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订阅分享平台 - 登录</title>
+    <!-- 安全相关头部 -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <!-- X-Frame-Options 应通过HTTP头设置，而非meta标签 -->
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self';">
+    
+    <!-- 预连接到关键域名以提高性能 -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <!-- 确保预加载资源与实际使用资源完全匹配，包括完整性哈希值 -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" integrity="sha512-GQGU0fMMi238uA+a/bdWJfpUGKUkBdgfFdgBm72SUQ6BeyWjoY/ton0tEjH+OSH9iP4Dfh+7HM0I9f5eR0L/4w==" as="style" crossorigin="anonymous">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js" integrity="sha512-pax4MlgXjHEPfCwcJLQhigY7+N8rt6bVvWLFyUMuxShv170X53TRzGPmPkZmGBhk+jikR8WBM4yl7A9WMHHqvg==" as="script" crossorigin="anonymous">
+    <link rel="preload" href="/assets/js/login.js" as="script">
+    
+    <!-- 使用SRI (Subresource Integrity)提高安全性 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" integrity="sha512-c42qTSw/wPZ3/5LBzD+Bw5f7bSF2oxou6wEb+I/lqeaKV5FDIfMvvRp772y4jcJLKuGUOpbJMdg/BTl50fJYAw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" integrity="sha512-GQGU0fMMi238uA+a/bdWJfpUGKUkBdgfFdgBm72SUQ6BeyWjoY/ton0tEjH+OSH9iP4Dfh+7HM0I9f5eR0L/4w==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    
+    <!-- 内联关键CSS减少渲染阻塞 -->
+    <style>
+        /* 自定义样式优化 */
+        body {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            font-size: calc(16px + 0.5vw);
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .btn {
+            margin-bottom: 1rem;
+            width: 100%;
+            padding: 0.75rem 1.25rem;
+            font-size: calc(14px + 0.5vw);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: -100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+        .btn:hover::after {
+            left: 100%;
+        }
+        .btn-primary {
+            background-color: #ff6f61;
+            border: none;
+            box-shadow: 0px 5px 15px rgba(255, 111, 97, 0.4);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #ff8e7f;
+            transform: translateY(-2px);
+        }
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+        .btn-secondary {
+            background-color: #4a90e2;
+            border: none;
+            box-shadow: 0px 5px 15px rgba(74, 144, 226, 0.4);
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #357abd;
+            transform: translateY(-2px);
+        }
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-size: calc(12px + 0.3vw);
+        }
+        h1 {
+            font-size: calc(24px + 1.5vw);
+        }
+        p.lead {
+            font-size: calc(16px + 0.8vw);
+        }
+        #userGuidelinesModal .modal-content {
+            background: rgba(255, 255, 255, 0.9);
+            color: #000;
+        }
+        .button-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        /* 加载指示器样式 */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* 错误提示样式 */
+        .error-message {
+            color: #ff4b5c;
+            background: rgba(255, 75, 92, 0.1);
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            display: none;
+        }
+        /* 离线状态通知 */
+        .offline-notice {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ff4b5c;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            display: none;
+            z-index: 9999;
+        }
+        /* 移除Modal遮罩样式 */
+        .modal-backdrop {
+            z-index: 1040 !important;
+        }
+        /* 确保modal消失后不影响页面交互 */
+        .modal, .modal-backdrop {
+            transition: opacity 0.3s ease-out;
+        }
+        /* 添加加载中动画效果 */
+        .page-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .page-loading.loaded {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面加载指示器 -->
+    <div id="pageLoading" class="page-loading">
+        <div class="spinner" style="width: 50px; height: 50px;"></div>
+    </div>
+
+    <!-- 离线通知 -->
+    <div class="offline-notice" id="offlineNotice">
+        您当前处于离线状态，请检查网络连接
+    </div>
+
+    <div class="container">
+        <h1 class="display-4">欢迎来到订阅分享平台</h1>
+        <p class="lead">通过Linux do登录并开始分享您的订阅链接。</p>
+        <hr class="my-4">
+        <div id="errorMessage" class="error-message"></div>
+        <div class="button-container">
+            <button id="loginButton" class="btn btn-primary btn-lg">
+                使用OAuth2登录
+            </button>
+            <button id="donateButton" class="btn btn-secondary btn-lg">
+                请我喝咖啡
+            </button>
+        </div>
+    </div>
+    <div class="footer">
+        power by Drlinzefeng
+    </div>
+
+    <!-- 用户守则弹出框 -->
+    <div class="modal fade" id="userGuidelinesModal" tabindex="-1" aria-labelledby="userGuidelinesModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userGuidelinesModalLabel">用户守则</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>规则（注：本网站为linux do论坛的内部网站，只支持linux do登录，不对外开放)</p>
+                    <ol>
+                        <li>根据要求规定用户拉取订阅 IP 数量单日不能超过 5 个（所以大家要设置本机不通过代理拉取，这个规则强制限制！！！）</li>
+                        <li>单订阅拉取单日不超过 30 次（比 1h 一次多一点点）（由于误封实在太多，很多小白不会调整订阅间隔，这个规则暂时没有实行）</li>
+                        <li>大家如果上传机场面板（一般都有做 UA 识别兼容的）导出的订阅链接，则大概率不会导致错误，如果想直接分享链接支持（全协议）。本机代理后不会给机场传递用户 IP，只会显示代理后的 IP（我知道这样会漏源，请大家不要打我）防止机场觉得过多用户订阅</li>
+                        <li>我每天（随机时间）会清理部分对于我的部署服务器来说无法正常拉取的节点（半自动化有个很丑的面板，可能会误伤，但是存下来的基本上都是活的）</li>
+                         <li>需要订阅转换的，可以单独勾选一个，然后点击聚合订阅也是没有问题的。</li>
+                    </ol>
+                    <p>暂时就这么多，建议大家遵守如果有意见可以评论区提一下（<a href="https://linux.do/t/topic/255350" target="_blank" rel="noopener noreferrer">https://linux.do/t/topic/255350</a>）</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="modalCloseBtn" data-bs-dismiss="modal">我已知晓</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用SRI的脚本标签，添加data-cfasync属性避免Rocket Loader干扰 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js" integrity="sha512-pax4MlgXjHEPfCwcJLQhigY7+N8rt6bVvWLFyUMuxShv170X53TRzGPmPkZmGBhk+jikR8WBM4yl7A9WMHHqvg==" crossorigin="anonymous" referrerpolicy="no-referrer" data-cfasync="false"></script>
+    
+    <!-- 外部JS文件加载，置于页面底部以避免阻塞渲染 -->
+    <script src="/assets/js/login.js" data-cfasync="false" defer></script>
+    
+    <!-- 添加基本的JS -->
+    <script>
+        // 页面加载完成后隐藏加载指示器
+        window.addEventListener('load', function() {
+            document.getElementById('pageLoading').classList.add('loaded');
+        });
+        
+        // 安全重定向函数
+        function safeRedirect(url) {
+            if (url.startsWith('https://')) {
+                window.location.href = url;
+            }
+        }
+        
+        // 为捐赠按钮添加事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('donateButton').addEventListener('click', function() {
+                safeRedirect('https://juanzen.linzefeng.top/');
+            });
+            
+            // 监听网络状态
+            window.addEventListener('online', function() {
+                document.getElementById('offlineNotice').style.display = 'none';
+            });
+            
+            window.addEventListener('offline', function() {
+                document.getElementById('offlineNotice').style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/animate.css/4.1.1/animate.min.css">
+    <title>订阅列表</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .subscription-table {
+            margin: 20px auto;
+            width: 100%;
+            max-width: 1200px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        th {
+            background-color: #007bff;
+            color: #000000;
+            cursor: pointer;
+        }
+        .details-row {
+            background-color: #f1f1f1;
+        }
+        .pagination {
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        #node-count {
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .subscription-table {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+        .copy-success {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.php">订阅分享平台</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><a class="nav-link" href="uplode.html">上传订阅</a></li>
+                <li class="nav-item"><a class="nav-link" href="display.html">查看订阅</a></li>
+                <li class="nav-item"><a class="nav-link" href="leaderboard.html">排行榜</a></li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item"><span class="nav-link" id="welcomeUser"></span></li>
+                <li class="nav-item"><a class="nav-link" href="logout.php">登出</a></li>
+                <li class="nav-item"><a class="nav-link" href="user_subscriptions.php">用户控制面板（实验性）</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid animate__animated animate__fadeIn">
+    <h2 class="text-center mt-4 animate__animated animate__fadeInDown">所有订阅</h2>
+    <div class="mb-3 text-center">
+        <div id="node-count" class="fw-bold">目前有 0 个节点</div>
+    </div>
+    <div class="d-flex justify-content-end align-items-center mb-3">
+        <div>
+            <label for="itemsPerPageSelect" class="form-label">每页显示节点数:</label>
+            <select id="itemsPerPageSelect" class="form-select d-inline-block w-auto">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+            </select>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered subscription-table animate__animated animate__zoomIn">
+            <thead>
+                <tr>
+                    <th onclick="sortTable('name')">订阅名称 <i class="fas fa-sort" id="sort-icon-name"></i></th>
+                    <th onclick="sortTable('username')">提供用户 <i class="fas fa-sort" id="sort-icon-username"></i></th>
+                    <th onclick="sortTable('weekly_subs')">被订阅次数 <i class="fas fa-sort" id="sort-icon-weekly_subs"></i></th>
+                    <th onclick="sortTable('available_traffic')">可用流量 (G) <i class="fas fa-sort" id="sort-icon-available_traffic"></i></th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="subscriptions-body">
+                <!-- 动态渲染订阅数据 -->
+            </tbody>
+        </table>
+    </div>
+    <nav>
+        <ul class="pagination" id="pagination"></ul>
+    </nav>
+</div>
+<div id="copy-success" class="copy-success">复制成功！</div>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        new WOW().init();
+        let itemsPerPage = 5;
+        let currentPage = 1;
+        let subscriptionsData = [];
+        let sortDirection = 1; // 1表示升序，-1表示降序
+        let currentSortField = null;
+
+        async function fetchSubscriptions() {
+            try {
+                const response = await fetch('/subscriptions_api.php');
+                if (!response.ok) {
+                    throw new Error('网络响应失败');
+                }
+                subscriptionsData = await response.json();
+                document.getElementById('node-count').innerText = `目前有 ${subscriptionsData.length} 个节点`;
+                renderTable(currentPage);
+                renderPagination();
+            } catch (error) {
+                console.error('获取订阅数据时出错:', error);
+            }
+        }
+
+        window.sortTable = function (field) {
+            if (currentSortField === field) {
+                sortDirection = -sortDirection; // 切换排序方向
+            } else {
+                currentSortField = field;
+                sortDirection = 1; // 默认升序
+            }
+
+            // 清除其他列的排序图标
+            document.querySelectorAll('thead th i').forEach(icon => {
+                icon.classList.remove('fa-sort-up', 'fa-sort-down');
+                icon.classList.add('fa-sort');
+            });
+
+            // 更新当前列的排序图标
+            const icon = document.getElementById(`sort-icon-${field}`);
+            icon.classList.remove('fa-sort');
+            icon.classList.add(sortDirection === 1 ? 'fa-sort-up' : 'fa-sort-down');
+
+            // 执行排序
+            subscriptionsData.sort((a, b) => {
+                if (typeof a[field] === "string") {
+                    return sortDirection * a[field].localeCompare(b[field], 'zh-CN');
+                } else {
+                    return sortDirection * (a[field] - b[field]);
+                }
+            });
+            renderTable(currentPage); // 重新渲染表格
+            renderPagination(); // 保持分页同步
+        }
+
+        function renderTable(page) {
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedData = subscriptionsData.slice(startIndex, endIndex);
+
+            const tbody = document.getElementById('subscriptions-body');
+            tbody.innerHTML = '';
+
+            paginatedData.forEach(sub => {
+                const tr = document.createElement('tr');
+                tr.className = 'animate__animated animate__fadeInUp';
+                tr.innerHTML = `
+                    <td>${sub.name}</td>
+                    <td>${sub.username}</td>
+                    <td>${sub.weekly_subs}</td>
+                    <td>${sub.available_traffic}</td>
+                    <td><button class="btn btn-info btn-sm" data-bs-toggle="collapse" data-bs-target="#details-${sub.id}">详情 <i class="fas fa-chevron-down"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+
+                const detailsRow = document.createElement('tr');
+                detailsRow.id = `details-${sub.id}`;
+                detailsRow.className = 'collapse details-row animate__animated animate__fadeIn';
+                detailsRow.innerHTML = `
+                    <td colspan="5">
+                        <strong>来源:</strong> ${sub.source}<br>
+                        <strong>备注:</strong> ${sub.remark}<br>
+                        <strong>处理后链接:</strong>
+                        <input type="text" class="form-control d-inline-block w-75" value="${sub.proxy_link}" readonly>
+                        <button class="btn btn-secondary btn-sm copy-btn" data-clipboard-text="${sub.proxy_link}">复制</button>
+                    </td>
+                `;
+                tbody.appendChild(detailsRow);
+            });
+
+            const clipboard = new ClipboardJS('.copy-btn');
+            clipboard.on('success', function(e) {
+                showCopySuccessMessage();
+            });
+        }
+
+        function showCopySuccessMessage() {
+            const copySuccess = document.getElementById('copy-success');
+            copySuccess.style.display = 'block';
+            setTimeout(() => {
+                copySuccess.style.display = 'none';
+            }, 2000);
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(subscriptionsData.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (i === currentPage ? ' active' : '');
+                li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                li.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    currentPage = i;
+                    renderTable(currentPage);
+                    renderPagination();
+                });
+                pagination.appendChild(li);
+            }
+        }
+
+        document.getElementById('itemsPerPageSelect').addEventListener('change', function () {
+            itemsPerPage = parseInt(this.value);
+            currentPage = 1;
+            renderTable(currentPage);
+            renderPagination();
+        });
+
+        fetchSubscriptions();
+    });
+</script>
+
+</body>
+</html>

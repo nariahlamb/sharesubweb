@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订阅列表</title>
+    <link rel="stylesheet" href="/css/bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/animate.css/4.1.1/animate.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .subscription-table {
+            margin: 20px auto;
+            width: 100%;
+            max-width: 1200px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        th {
+            background-color: #007bff;
+            color: #000000;
+            cursor: pointer;
+        }
+        .details-row {
+            background-color: #f1f1f1;
+        }
+        .pagination {
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        #node-count {
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .subscription-table {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+        .copy-success {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            z-index: 9999;
+        }
+        /* 加载指示器样式 */
+        #loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 10000;
+        }
+        #loading-indicator .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        /* 添加样式用于一行显示五个 */
+        #selected-subscriptions-list {
+            display: flex;
+            flex-wrap: wrap; /* 自动换行 */
+            list-style: none; /* 去掉列表默认样式 */
+            padding: 0;
+            margin: 0;
+        }
+
+        #selected-subscriptions-list li {
+            flex: 1 1 calc(20% - 10px); /* 每个占20%宽度，减去间距 */
+            margin: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            #selected-subscriptions-list li {
+                flex: 1 1 calc(50% - 10px); /* 屏幕窄时每行显示两个 */
+            }
+        }
+
+        @media (max-width: 480px) {
+            #selected-subscriptions-list li {
+                flex: 1 1 calc(100% - 10px); /* 更窄时每行显示一个 */
+            }
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">订阅分享平台</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><a class="nav-link" href="uplode.html">上传订阅</a></li>
+                <li class="nav-item"><a class="nav-link" href="display.html">查看订阅</a></li>
+                <li class="nav-item"><a class="nav-link" href="leaderboard.html">排行榜</a></li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item"><span class="nav-link" id="welcomeUser">欢迎, 用户名</span></li>
+                <li class="nav-item"><a class="nav-link" href="logout.php">登出</a></li>
+                <li class="nav-item"><a class="nav-link" href="user_subscriptions.php">用户控制面板（实验性）</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- 加载指示器 -->
+<div id="loading-indicator">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">加载中...</span>
+    </div>
+</div>
+
+<div class="container-fluid animate__animated animate__fadeIn">
+    <h2 class="text-center mt-4 animate__animated animate__fadeInDown">
+        所有订阅（暂未支持订阅节点测活，请大家自行测试使用）
+    </h2>
+    <div class="mb-3 text-center">
+        <div id="node-count" class="fw-bold">目前有 0 个节点</div>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="mb-4">
+        <input type="text" id="search-input" class="form-control" placeholder="搜索订阅...">
+    </div>
+
+    <!-- 二级菜单和按钮开始 -->
+    <div class="mb-4">
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="aggregationDropdown" 
+                data-bs-toggle="dropdown" aria-expanded="false">
+                选择您的软件
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="aggregationDropdown">
+                <li class="dropdown-header">请选择您的软件</li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="clashr" id="target-clashr"><label class="form-check-label" for="target-clashr">ClashR</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="quan" id="target-quan"><label class="form-check-label" for="target-quan">Quantumult</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="quanx" id="target-quanx"><label class="form-check-label" for="target-quanx">Quantumult X</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="loon" id="target-loon"><label class="form-check-label" for="target-loon">Loon</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="ss" id="target-ss"><label class="form-check-label" for="target-ss">SS (SIP002)</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="sssub" id="target-sssub"><label class="form-check-label" for="target-sssub">SS Android</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="ssd" id="target-ssd"><label class="form-check-label" for="target-ssd">SSD</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="ssr" id="target-ssr"><label class="form-check-label" for="target-ssr">SSR</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surfboard" id="target-surfboard"><label class="form-check-label" for="target-surfboard">Surfboard</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surge&ver=2" id="target-surge2"><label class="form-check-label" for="target-surge2">Surge 2</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surge&ver=3" id="target-surge3"><label class="form-check-label" for="target-surge3">Surge 3</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surge&ver=4" id="target-surge4"><label class="form-check-label" for="target-surge4">Surge 4</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surge&ver=5" id="target-surge5"><label class="form-check-label" for="target-surge5">Surge 5</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="v2ray" id="target-v2ray"><label class="form-check-label" for="target-v2ray">V2Ray</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="singbox" id="target-singbox"><label class="form-check-label" for="target-singbox">Singbox</label></div></li>
+            </ul>
+        </div>
+        <button id="generate-selected-link-btn" class="btn btn-primary mt-3">聚合选择后的订阅</button>
+        <button id="generate-all-link-btn" class="btn btn-secondary mt-3">聚合全部订阅</button>
+    </div>
+    <!-- 二级菜单和按钮结束 -->
+
+    <!-- 已选择的订阅显示区域 -->
+    <div class="mb-4">
+        <h5>已选择的订阅：</h5>
+        <ul id="selected-subscriptions-list"></ul>
+    </div>
+
+    <!-- 生成的链接和所选订阅信息显示区域 -->
+    <div id="generated-link-container" class="mt-3" style="display: none;">
+        <h5>您的聚合链接：</h5>
+        <input type="text" id="generated-link" class="form-control" readonly>
+        <p>您已选择以下订阅：</p>
+        <ul id="selected-subscriptions-names" class="list-group"></ul>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered subscription-table animate__animated animate__zoomIn">
+            <thead>
+                <tr>
+                    <th>选择</th>
+                    <th onclick="sortTable('name')">订阅名称 <i class="fa-solid fa-sort" id="sort-icon-name"></i></th>
+                    <th onclick="sortTable('username')">提供用户 <i class="fa-solid fa-sort" id="sort-icon-username"></i></th>
+                    <th onclick="sortTable('weekly_subs')">被订阅次数 <i class="fa-solid fa-sort" id="sort-icon-weekly_subs"></i></th>
+                    <th onclick="sortTable('available_traffic')">可用流量 (G) <i class="fa-solid fa-sort" id="sort-icon-available_traffic"></i></th>
+                    <th onclick="sortTable('remaining_days')">剩余天数 <i class="fa-solid fa-sort" id="sort-icon-remaining_days"></i></th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="subscriptions-body">
+                <!-- 动态渲染订阅数据 -->
+            </tbody>
+        </table>
+    </div>
+    <nav>
+        <ul class="pagination" id="pagination"></ul>
+    </nav>
+</div>
+<div id="copy-success" class="copy-success">复制成功！</div>
+
+<link rel="stylesheet" href="/css/bootstrap/5.1.3/css/bootstrap.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.10/clipboard.min.js"></script>
+
+<!-- 添加用于处理未授权重定向的内联JavaScript -->
+<script>
+// 在页面加载完成后执行
+document.addEventListener('DOMContentLoaded', function() {
+    // 拦截所有fetch请求
+    const originalFetch = window.fetch;
+    window.fetch = async function() {
+        try {
+            const response = await originalFetch.apply(this, arguments);
+            
+            // 检查自定义重定向头部
+            if (response.headers.has('X-Redirect-To')) {
+                const redirectUrl = response.headers.get('X-Redirect-To');
+                console.log('收到重定向请求，正在跳转到:', redirectUrl);
+                window.location.href = redirectUrl;
+                return new Response(JSON.stringify({}));
+            }
+            
+            // 如果状态是401，执行重定向
+            if (response.status === 401) {
+                console.log('检测到未授权状态，正在重定向到首页');
+                window.location.href = '/index.html';
+                return new Response(JSON.stringify({}));
+            }
+            
+            return response;
+        } catch (error) {
+            console.error('请求失败:', error);
+            // 如果捕获到网络错误，可能是会话已过期
+            const subscriptionsBody = document.getElementById('subscriptions-body');
+            if (subscriptionsBody) {
+                subscriptionsBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-danger">
+                            加载订阅失败，请检查您的网络连接或登录状态。
+                            <button class="btn btn-sm btn-primary mt-2" onclick="location.reload()">重试</button>
+                            <a href="/index.html" class="btn btn-sm btn-secondary mt-2">返回首页</a>
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            // 隐藏加载指示器
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+            
+            throw error;
+        }
+    };
+});
+</script>
+
+<script src="/assets/js/subscriptions.js"></script>
+</body>
+</html>
+</body>
+</html>
