@@ -51,11 +51,6 @@ func (s *Server) Start() error {
 	// 配置中间件
 	r.Use(gin.Recovery())
 	
-	// 如果配置了API密钥，添加认证中间件
-	if s.cfg.App.APIKey != "" {
-		r.Use(s.authMiddleware())
-	}
-	
 	// 静态文件
 	r.Static("/static", "./web/static")
 	
@@ -92,23 +87,6 @@ func (s *Server) Start() error {
 		dashboard.POST("/output/generate", s.handleGenerateOutput)
 	}
 	
-	// API路由
-	api := r.Group("/api")
-	{
-		api.GET("/subscriptions", s.apiListSubscriptions)
-		api.GET("/subscriptions/:id", s.apiGetSubscription)
-		api.POST("/subscriptions", s.apiAddSubscription)
-		api.POST("/subscriptions/batch", s.apiBatchAddSubscription) // 批量添加订阅API
-		api.PUT("/subscriptions/:id", s.apiUpdateSubscription)
-		api.DELETE("/subscriptions/:id", s.apiDeleteSubscription)
-		api.POST("/subscriptions/:id/refresh", s.apiRefreshSubscription)
-		
-		api.GET("/nodes", s.apiListNodes)
-		api.GET("/nodes/active", s.apiListActiveNodes)
-		
-		api.POST("/output/generate", s.apiGenerateOutput)
-	}
-	
 	// 订阅路由
 	sub := r.Group("/sub")
 	{
@@ -143,19 +121,6 @@ func (s *Server) Stop() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		s.httpServer.Shutdown(ctx)
-	}
-}
-
-// 认证中间件
-func (s *Server) authMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		apiKey := c.GetHeader("X-API-Key")
-		if apiKey != s.cfg.App.APIKey {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
-			c.Abort()
-			return
-		}
-		c.Next()
 	}
 }
 
@@ -437,219 +402,6 @@ func (s *Server) handleGenerateOutput(c *gin.Context) {
 	}
 	
 	c.Redirect(http.StatusFound, "/dashboard")
-}
-
-// API handlers
-
-// API获取订阅列表
-func (s *Server) apiListSubscriptions(c *gin.Context) {
-	subs := s.subService.GetSubscriptions()
-	c.JSON(http.StatusOK, gin.H{
-		"subscriptions": subs,
-	})
-}
-
-// API获取指定订阅
-func (s *Server) apiGetSubscription(c *gin.Context) {
-	id := c.Param("id")
-	
-	sub, err := s.subService.GetSubscription(id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "订阅不存在",
-		})
-		return
-	}
-	
-	c.JSON(http.StatusOK, gin.H{
-		"subscription": sub,
-	})
-}
-
-// API添加订阅
-func (s *Server) apiAddSubscription(c *gin.Context) {
-	var form struct {
-		Name    string `json:"name" binding:"required"`
-		URL     string `json:"url" binding:"required"`
-		Type    string `json:"type" binding:"required"`
-		Remarks string `json:"remarks"`
-	}
-	
-	if err := c.ShouldBindJSON(&form); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "参数错误",
-		})
-		return
-	}
-	
-	sub := &model.Subscription{
-		Name:    form.Name,
-		URL:     form.URL,
-		Type:    form.Type,
-		Remarks: form.Remarks,
-	}
-	
-	if err := s.subService.AddSubscription(sub); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("添加订阅失败: %v", err),
-		})
-		return
-	}
-	
-	c.JSON(http.StatusOK, gin.H{
-		"subscription": sub,
-	})
-}
-
-// API批量添加订阅
-func (s *Server) apiBatchAddSubscription(c *gin.Context) {
-	var form struct {
-		Subscriptions []struct {
-			Name    string `json:"name" binding:"required"`
-			URL     string `json:"url" binding:"required"`
-			Type    string `json:"type" binding:"required"`
-			Remarks string `json:"remarks"`
-		} `json:"subscriptions" binding:"required"`
-	}
-	
-	if err := c.ShouldBindJSON(&form); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "参数错误",
-		})
-		return
-	}
-	
-	results := make(map[string]interface{})
-	for i, subData := range form.Subscriptions {
-		sub := &model.Subscription{
-			Name:    subData.Name,
-			URL:     subData.URL,
-			Type:    subData.Type,
-			Remarks: subData.Remarks,
-		}
-		
-		if err := s.subService.AddSubscription(sub); err != nil {
-			results[fmt.Sprintf("sub_%d", i)] = map[string]interface{}{
-				"success": false,
-				"error":   err.Error(),
-			}
-		} else {
-			results[fmt.Sprintf("sub_%d", i)] = map[string]interface{}{
-				"success": true,
-				"id":      sub.ID,
-			}
-		}
-	}
-	
-	c.JSON(http.StatusOK, gin.H{
-		"results": results,
-	})
-}
-
-// API更新订阅
-func (s *Server) apiUpdateSubscription(c *gin.Context) {
-	id := c.Param("id")
-	var form struct {
-		Name    string `json:"name" binding:"required"`
-		URL     string `json:"url" binding:"required"`
-		Type    string `json:"type" binding:"required"`
-		Remarks string `json:"remarks"`
-	}
-	
-	if err := c.ShouldBindJSON(&form); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "参数错误",
-		})
-		return
-	}
-	
-	sub, err := s.subService.GetSubscription(id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "订阅不存在",
-		})
-		return
-	}
-	
-	sub.Name = form.Name
-	sub.URL = form.URL
-	sub.Type = form.Type
-	sub.Remarks = form.Remarks
-	
-	if err := s.subService.UpdateSubscription(sub); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("更新订阅失败: %v", err),
-		})
-		return
-	}
-	
-	c.JSON(http.StatusOK, gin.H{
-		"subscription": sub,
-	})
-}
-
-// API删除订阅
-func (s *Server) apiDeleteSubscription(c *gin.Context) {
-	id := c.Param("id")
-	
-	if err := s.subService.DeleteSubscription(id); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "订阅不存在",
-		})
-		return
-	}
-	
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-	})
-}
-
-// API刷新订阅
-func (s *Server) apiRefreshSubscription(c *gin.Context) {
-	id := c.Param("id")
-	
-	if err := s.subService.RefreshSubscription(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("刷新订阅失败: %v", err),
-		})
-		return
-	}
-	
-	sub, _ := s.subService.GetSubscription(id)
-	c.JSON(http.StatusOK, gin.H{
-		"subscription": sub,
-	})
-}
-
-// API获取所有节点
-func (s *Server) apiListNodes(c *gin.Context) {
-	nodes := s.subService.GetAllNodes()
-	c.JSON(http.StatusOK, gin.H{
-		"nodes": nodes,
-	})
-}
-
-// API获取所有可用节点
-func (s *Server) apiListActiveNodes(c *gin.Context) {
-	nodes := s.subService.GetActiveNodes()
-	c.JSON(http.StatusOK, gin.H{
-		"nodes": nodes,
-	})
-}
-
-// API生成输出
-func (s *Server) apiGenerateOutput(c *gin.Context) {
-	err := s.outputService.GenerateOutputs()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("生成输出失败: %v", err),
-		})
-		return
-	}
-	
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-	})
 }
 
 // Subscription handlers

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -468,18 +469,6 @@ func (s *OutputService) generateBase64Config(nodes []*model.ProxyNode) error {
 
 // 保存输出文件
 func (s *OutputService) saveOutput(filename string, data []byte) error {
-	switch s.cfg.Output.SaveMethod {
-	case "local":
-		return s.saveLocal(filename, data)
-	case "webdav":
-		return s.saveWebDAV(filename, data)
-	default:
-		return fmt.Errorf("不支持的保存方法: %s", s.cfg.Output.SaveMethod)
-	}
-}
-
-// 本地保存
-func (s *OutputService) saveLocal(filename string, data []byte) error {
 	path := filepath.Join(s.cfg.Output.LocalPath, filename)
 	dir := filepath.Dir(path)
 	
@@ -490,12 +479,6 @@ func (s *OutputService) saveLocal(filename string, data []byte) error {
 	
 	// 写入文件
 	return ioutil.WriteFile(path, data, 0644)
-}
-
-// WebDAV保存
-func (s *OutputService) saveWebDAV(filename string, data []byte) error {
-	// 简化处理，实际上需要使用WebDAV客户端库
-	return fmt.Errorf("WebDAV保存尚未实现")
 }
 
 // 工具函数：获取代理名称列表

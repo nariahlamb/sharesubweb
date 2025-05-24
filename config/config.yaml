@@ -2,7 +2,6 @@
 app:
   name: "ShareSubWeb"
   port: 8199
-  api-key: "" # 可选的API密钥，为空则不启用验证
 
 # 订阅源配置
 subscriptions:
@@ -48,16 +47,8 @@ node-process:
 
 # 输出配置
 output:
-  # 保存方法：local, webdav
-  save-method: "local"
   # 本地保存路径
   local-path: "./output"
-  # WebDAV配置
-  webdav:
-    url: ""
-    username: ""
-    password: ""
-    directory: "/"
   # 聚合订阅格式
   formats:
   - type: "clash"

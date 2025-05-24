@@ -20,7 +20,6 @@ type Config struct {
 type AppConfig struct {
 	Name   string `yaml:"name"`
 	Port   int    `yaml:"port"`
-	APIKey string `yaml:"api-key"`
 }
 
 // SubscriptionConfig 订阅配置
@@ -81,18 +80,8 @@ type FilterConfig struct {
 
 // OutputConfig 输出配置
 type OutputConfig struct {
-	SaveMethod string        `yaml:"save-method"`
 	LocalPath  string        `yaml:"local-path"`
-	WebDAV     WebDAVConfig  `yaml:"webdav"`
 	Formats    []FormatConfig `yaml:"formats"`
-}
-
-// WebDAVConfig WebDAV配置
-type WebDAVConfig struct {
-	URL       string `yaml:"url"`
-	Username  string `yaml:"username"`
-	Password  string `yaml:"password"`
-	Directory string `yaml:"directory"`
 }
 
 // FormatConfig 输出格式配置
@@ -137,7 +126,6 @@ func createDefaultConfig(file string) (*Config, error) {
 		App: AppConfig{
 			Name:   "ShareSubWeb",
 			Port:   8199,
-			APIKey: "",
 		},
 		Subscriptions: []SubscriptionConfig{
 			{
@@ -183,14 +171,7 @@ func createDefaultConfig(file string) (*Config, error) {
 			},
 		},
 		Output: OutputConfig{
-			SaveMethod: "local",
 			LocalPath:  "./output",
-			WebDAV: WebDAVConfig{
-				URL:       "",
-				Username:  "",
-				Password:  "",
-				Directory: "/",
-			},
 			Formats: []FormatConfig{
 				{
 					Type:   "clash",
