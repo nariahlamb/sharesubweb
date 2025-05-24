@@ -3,12 +3,16 @@ package server
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nariahlamb/sharesubweb/config"
+	"github.com/nariahlamb/sharesubweb/model"
 	"github.com/nariahlamb/sharesubweb/service"
 )
 
@@ -55,6 +59,14 @@ func (s *Server) Start() error {
 	// 静态文件
 	r.Static("/static", "./web/static")
 	
+	// 加载HTML模板
+	r.SetFuncMap(template.FuncMap{
+		"unescapeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+	})
+	r.LoadHTMLGlob("./web/template/*")
+	
 	// 首页
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/dashboard")
@@ -66,8 +78,10 @@ func (s *Server) Start() error {
 		dashboard.GET("", s.handleDashboard)
 		dashboard.GET("/subscriptions", s.handleListSubscriptions)
 		dashboard.POST("/subscriptions", s.handleAddSubscription)
-		dashboard.PUT("/subscriptions/:id", s.handleUpdateSubscription)
-		dashboard.DELETE("/subscriptions/:id", s.handleDeleteSubscription)
+		dashboard.POST("/subscriptions/batch", s.handleBatchAddSubscription) // 批量添加订阅
+		dashboard.GET("/subscriptions/edit/:id", s.handleEditSubscription)
+		dashboard.POST("/subscriptions/:id", s.handleUpdateSubscription)
+		dashboard.POST("/subscriptions/:id/delete", s.handleDeleteSubscription)
 		dashboard.POST("/subscriptions/:id/refresh", s.handleRefreshSubscription)
 		dashboard.POST("/subscriptions/refresh-all", s.handleRefreshAllSubscriptions)
 		
@@ -84,6 +98,7 @@ func (s *Server) Start() error {
 		api.GET("/subscriptions", s.apiListSubscriptions)
 		api.GET("/subscriptions/:id", s.apiGetSubscription)
 		api.POST("/subscriptions", s.apiAddSubscription)
+		api.POST("/subscriptions/batch", s.apiBatchAddSubscription) // 批量添加订阅API
 		api.PUT("/subscriptions/:id", s.apiUpdateSubscription)
 		api.DELETE("/subscriptions/:id", s.apiDeleteSubscription)
 		api.POST("/subscriptions/:id/refresh", s.apiRefreshSubscription)
@@ -148,8 +163,26 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 
 // 处理仪表盘页面
 func (s *Server) handleDashboard(c *gin.Context) {
+	subs := s.subService.GetSubscriptions()
+	
+	// 统计数据
+	totalNodes := 0
+	activeNodes := 0
+	for _, sub := range subs {
+		totalNodes += sub.TotalNodes
+		activeNodes += sub.ActiveNodes
+	}
+	
+	// 构建基础URL
+	baseUrl := fmt.Sprintf("http://%s", c.Request.Host)
+	
 	c.HTML(http.StatusOK, "dashboard.html", gin.H{
-		"title": s.cfg.App.Name,
+		"title":       s.cfg.App.Name,
+		"version":     "1.0.0",
+		"subCount":    len(subs),
+		"totalNodes":  totalNodes,
+		"activeNodes": activeNodes,
+		"baseUrl":     baseUrl,
 	})
 }
 
@@ -157,6 +190,8 @@ func (s *Server) handleDashboard(c *gin.Context) {
 func (s *Server) handleListSubscriptions(c *gin.Context) {
 	subs := s.subService.GetSubscriptions()
 	c.HTML(http.StatusOK, "subscriptions.html", gin.H{
+		"title":         s.cfg.App.Name,
+		"version":       "1.0.0",
 		"subscriptions": subs,
 	})
 }
@@ -192,6 +227,87 @@ func (s *Server) handleAddSubscription(c *gin.Context) {
 	}
 	
 	c.Redirect(http.StatusFound, "/dashboard/subscriptions")
+}
+
+// 处理批量添加订阅
+func (s *Server) handleBatchAddSubscription(c *gin.Context) {
+	var form struct {
+		BatchSubscriptions string `form:"batch_subscriptions" binding:"required"`
+	}
+	
+	if err := c.ShouldBind(&form); err != nil {
+		c.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"error": "表单参数错误",
+		})
+		return
+	}
+	
+	// 解析每行数据
+	lines := strings.Split(form.BatchSubscriptions, "\n")
+	successCount := 0
+	errorMessages := []string{}
+	
+	for lineNum, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		
+		// 解析CSV格式：名称,类型,URL,备注(可选)
+		parts := strings.Split(line, ",")
+		if len(parts) < 3 {
+			errorMessages = append(errorMessages, fmt.Sprintf("第%d行格式错误，需要至少3个字段", lineNum+1))
+			continue
+		}
+		
+		sub := &model.Subscription{
+			Name: strings.TrimSpace(parts[0]),
+			Type: strings.TrimSpace(parts[1]),
+			URL:  strings.TrimSpace(parts[2]),
+		}
+		
+		// 可选的备注字段
+		if len(parts) > 3 {
+			sub.Remarks = strings.TrimSpace(parts[3])
+		}
+		
+		if err := s.subService.AddSubscription(sub); err != nil {
+			errorMessages = append(errorMessages, fmt.Sprintf("第%d行添加失败: %v", lineNum+1, err))
+		} else {
+			successCount++
+		}
+	}
+	
+	// 返回结果
+	if len(errorMessages) > 0 {
+		c.HTML(http.StatusOK, "message.html", gin.H{
+			"title":   "批量添加结果",
+			"message": fmt.Sprintf("成功添加%d个订阅，失败%d个", successCount, len(errorMessages)),
+			"details": strings.Join(errorMessages, "<br>"),
+		})
+		return
+	}
+	
+	c.Redirect(http.StatusFound, "/dashboard/subscriptions")
+}
+
+// 处理编辑订阅页面
+func (s *Server) handleEditSubscription(c *gin.Context) {
+	id := c.Param("id")
+	
+	sub, err := s.subService.GetSubscription(id)
+	if err != nil {
+		c.HTML(http.StatusNotFound, "error.html", gin.H{
+			"error": "订阅不存在",
+		})
+		return
+	}
+	
+	c.HTML(http.StatusOK, "edit_subscription.html", gin.H{
+		"title":        s.cfg.App.Name,
+		"version":      "1.0.0",
+		"subscription": sub,
+	})
 }
 
 // 处理更新订阅
@@ -292,7 +408,9 @@ func (s *Server) handleRefreshAllSubscriptions(c *gin.Context) {
 func (s *Server) handleListNodes(c *gin.Context) {
 	nodes := s.subService.GetAllNodes()
 	c.HTML(http.StatusOK, "nodes.html", gin.H{
+		"title": s.cfg.App.Name,
 		"nodes": nodes,
+		"version": "1.0.0",
 	})
 }
 
@@ -380,6 +498,51 @@ func (s *Server) apiAddSubscription(c *gin.Context) {
 	
 	c.JSON(http.StatusOK, gin.H{
 		"subscription": sub,
+	})
+}
+
+// API批量添加订阅
+func (s *Server) apiBatchAddSubscription(c *gin.Context) {
+	var form struct {
+		Subscriptions []struct {
+			Name    string `json:"name" binding:"required"`
+			URL     string `json:"url" binding:"required"`
+			Type    string `json:"type" binding:"required"`
+			Remarks string `json:"remarks"`
+		} `json:"subscriptions" binding:"required"`
+	}
+	
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "参数错误",
+		})
+		return
+	}
+	
+	results := make(map[string]interface{})
+	for i, subData := range form.Subscriptions {
+		sub := &model.Subscription{
+			Name:    subData.Name,
+			URL:     subData.URL,
+			Type:    subData.Type,
+			Remarks: subData.Remarks,
+		}
+		
+		if err := s.subService.AddSubscription(sub); err != nil {
+			results[fmt.Sprintf("sub_%d", i)] = map[string]interface{}{
+				"success": false,
+				"error":   err.Error(),
+			}
+		} else {
+			results[fmt.Sprintf("sub_%d", i)] = map[string]interface{}{
+				"success": true,
+				"id":      sub.ID,
+			}
+		}
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"results": results,
 	})
 }
 

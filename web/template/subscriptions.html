@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}} - 订阅管理</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>{{.title}}</h1>
+            <nav>
+                <ul>
+                    <li><a href="/dashboard">仪表盘</a></li>
+                    <li><a href="/dashboard/subscriptions">订阅管理</a></li>
+                    <li><a href="/dashboard/nodes">节点管理</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <section class="subscriptions">
+                <h2>我的订阅</h2>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>名称</th>
+                            <th>类型</th>
+                            <th>URL</th>
+                            <th>节点数</th>
+                            <th>到期时间</th>
+                            <th>剩余流量</th>
+                            <th>最后更新</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .subscriptions}}
+                        <tr>
+                            <td>{{.Name}}</td>
+                            <td>{{.Type}}</td>
+                            <td><div class="truncate">{{.URL}}</div></td>
+                            <td>{{.TotalNodes}}</td>
+                            <td>{{if not .ExpiryTime.IsZero}}{{.ExpiryTime.Format "2006-01-02"}}{{else}}未知{{end}}</td>
+                            <td>{{.GetRemainingTrafficFormatted}}</td>
+                            <td>{{if not .LastUpdate.IsZero}}{{.LastUpdate.Format "2006-01-02 15:04:05"}}{{else}}未更新{{end}}</td>
+                            <td>
+                                <div class="action-group">
+                                    <form action="/dashboard/subscriptions/{{.ID}}/refresh" method="post">
+                                        <button type="submit" class="btn btn-small">刷新</button>
+                                    </form>
+                                    <a href="/dashboard/subscriptions/edit/{{.ID}}" class="btn btn-small">编辑</a>
+                                    <form action="/dashboard/subscriptions/{{.ID}}" method="post" class="delete-form">
+                                        <input type="hidden" name="_method" value="DELETE">
+                                        <button type="submit" class="btn btn-small btn-danger">删除</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                
+                <div class="subscription-actions">
+                    <form action="/dashboard/subscriptions/refresh-all" method="post">
+                        <button type="submit" class="btn">刷新所有订阅</button>
+                    </form>
+                </div>
+            </section>
+            
+            <section class="add-subscription">
+                <h2>添加订阅</h2>
+                
+                <div class="tab-container">
+                    <div class="tab-header">
+                        <button class="tab-btn active" data-tab="single">单个添加</button>
+                        <button class="tab-btn" data-tab="batch">批量添加</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="single">
+                            <form action="/dashboard/subscriptions" method="post">
+                                <div class="form-group">
+                                    <label for="name">名称</label>
+                                    <input type="text" id="name" name="name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="url">订阅地址</label>
+                                    <input type="text" id="url" name="url" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="type">类型</label>
+                                    <select id="type" name="type" required>
+                                        <option value="clash">Clash</option>
+                                        <option value="v2ray">V2ray</option>
+                                        <option value="ss">Shadowsocks</option>
+                                        <option value="ssr">ShadowsocksR</option>
+                                        <option value="trojan">Trojan</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="remarks">备注</label>
+                                    <textarea id="remarks" name="remarks"></textarea>
+                                </div>
+                                <button type="submit" class="btn">添加订阅</button>
+                            </form>
+                        </div>
+                        
+                        <div class="tab-pane" id="batch">
+                            <form action="/dashboard/subscriptions/batch" method="post">
+                                <div class="form-group">
+                                    <label for="batch-subscriptions">批量添加订阅（每行一条）</label>
+                                    <textarea id="batch-subscriptions" name="batch_subscriptions" rows="8" placeholder="格式：名称,类型,URL,备注(可选)&#10;示例：&#10;我的订阅,clash,https://example.com/sub,主要使用&#10;备用订阅,v2ray,https://example.com/v2,备用"></textarea>
+                                </div>
+                                <button type="submit" class="btn">批量添加</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2023 ShareSubWeb. 版本 {{.version}}</p>
+        </footer>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+    <script>
+        // 标签页切换
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 移除所有活跃状态
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabPanes.forEach(p => p.classList.remove('active'));
+                    
+                    // 添加当前活跃状态
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

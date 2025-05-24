@@ -66,6 +66,11 @@ nav a:hover {
     color: var(--primary-color);
 }
 
+nav a.active {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
 /* 统计卡片 */
 .stats {
     display: grid;
@@ -128,6 +133,27 @@ nav a:hover {
     background-color: var(--secondary-color);
 }
 
+.btn-small {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
 /* 表格样式 */
 table {
     width: 100%;
@@ -166,6 +192,18 @@ code {
     font-size: 14px;
 }
 
+.truncate {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.action-group {
+    display: flex;
+    gap: 5px;
+}
+
 /* 页脚样式 */
 footer {
     margin-top: 50px;
@@ -174,6 +212,92 @@ footer {
     text-align: center;
     color: #777;
     font-size: 14px;
+}
+
+/* 订阅管理页面样式 */
+.subscriptions {
+    margin-bottom: 40px;
+}
+
+.subscriptions h2, .add-subscription h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: var(--dark-color);
+}
+
+.subscription-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* 标签页样式 */
+.tab-container {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.tab-header {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--text-color);
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 500;
+}
+
+.tab-content {
+    padding: 10px 0;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
 }
 
 /* 响应式设计 */
@@ -200,4 +324,86 @@ footer {
         display: block;
         overflow-x: auto;
     }
+    
+    .action-group {
+        flex-direction: column;
+    }
+}
+
+/* 表单动作区域 */
+.form-actions {
+    margin-top: 25px;
+    display: flex;
+    gap: 10px;
+}
+
+/* 消息框样式 */
+.message-box, .error-box {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 25px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.message-box h2, .error-box h2 {
+    color: var(--dark-color);
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+.message {
+    margin-bottom: 25px;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.error-message {
+    margin-bottom: 25px;
+    color: var(--danger-color);
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.details {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: var(--border-radius);
+}
+
+.details h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: var(--dark-color);
+}
+
+.details-content {
+    padding: 10px;
+    background-color: white;
+    border: 1px solid #eee;
+    border-radius: var(--border-radius);
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow-x: auto;
+}
+
+/* 节点样式 */
+.node-active {
+    background-color: rgba(46, 204, 113, 0.1);
+}
+
+.node-inactive {
+    background-color: rgba(231, 76, 60, 0.1);
+}
+
+.api-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-right: 5px;
 } 

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}} - 编辑订阅</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>{{.title}}</h1>
+            <nav>
+                <ul>
+                    <li><a href="/dashboard">仪表盘</a></li>
+                    <li><a href="/dashboard/subscriptions">订阅管理</a></li>
+                    <li><a href="/dashboard/nodes">节点管理</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <section class="edit-subscription">
+                <h2>编辑订阅</h2>
+                
+                <form action="/dashboard/subscriptions/{{.subscription.ID}}" method="post">
+                    <div class="form-group">
+                        <label for="name">名称</label>
+                        <input type="text" id="name" name="name" value="{{.subscription.Name}}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="url">订阅地址</label>
+                        <input type="text" id="url" name="url" value="{{.subscription.URL}}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">类型</label>
+                        <select id="type" name="type" required>
+                            <option value="clash" {{if eq .subscription.Type "clash"}}selected{{end}}>Clash</option>
+                            <option value="v2ray" {{if eq .subscription.Type "v2ray"}}selected{{end}}>V2ray</option>
+                            <option value="ss" {{if eq .subscription.Type "ss"}}selected{{end}}>Shadowsocks</option>
+                            <option value="ssr" {{if eq .subscription.Type "ssr"}}selected{{end}}>ShadowsocksR</option>
+                            <option value="trojan" {{if eq .subscription.Type "trojan"}}selected{{end}}>Trojan</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="remarks">备注</label>
+                        <textarea id="remarks" name="remarks">{{.subscription.Remarks}}</textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn">保存修改</button>
+                        <a href="/dashboard/subscriptions" class="btn btn-secondary">取消</a>
+                    </div>
+                </form>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2023 ShareSubWeb. 版本 {{.version}}</p>
+        </footer>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 

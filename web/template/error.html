@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>错误 - ShareSubWeb</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ShareSubWeb</h1>
+            <nav>
+                <ul>
+                    <li><a href="/dashboard">仪表盘</a></li>
+                    <li><a href="/dashboard/subscriptions">订阅管理</a></li>
+                    <li><a href="/dashboard/nodes">节点管理</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <section class="error-box">
+                <h2>操作失败</h2>
+                <div class="error-message">
+                    <p>{{.error}}</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="javascript:history.back()" class="btn">返回上一页</a>
+                    <a href="/dashboard" class="btn">返回仪表盘</a>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2023 ShareSubWeb.</p>
+        </footer>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 

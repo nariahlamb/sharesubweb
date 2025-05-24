@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>{{.title}}</h1>
+            <nav>
+                <ul>
+                    <li><a href="/dashboard">仪表盘</a></li>
+                    <li><a href="/dashboard/subscriptions">订阅管理</a></li>
+                    <li><a href="/dashboard/nodes">节点管理</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <section class="message-box">
+                <h2>{{.title}}</h2>
+                <div class="message">
+                    <p>{{.message}}</p>
+                    {{if .details}}
+                    <div class="details">
+                        <h3>详细信息：</h3>
+                        <div class="details-content">
+                            {{.details | unescapeHTML}}
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                <div class="action-buttons">
+                    <a href="/dashboard" class="btn">返回仪表盘</a>
+                    <a href="/dashboard/subscriptions" class="btn">返回订阅管理</a>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2023 ShareSubWeb. 版本 {{.version}}</p>
+        </footer>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 
