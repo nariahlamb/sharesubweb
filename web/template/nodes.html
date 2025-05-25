@@ -1,1 +1,86 @@
- 
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .title }} - 节点管理</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">{{ .title }}</div>
+        <nav>
+            <a href="/dashboard">仪表盘</a>
+            <a href="/dashboard/subscriptions">订阅管理</a>
+            <a href="/dashboard/nodes" class="active">节点管理</a>
+        </nav>
+        <div class="version">v{{ .version }}</div>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <h1>节点管理</h1>
+            <div class="actions">
+                <form action="/dashboard/nodes/check-all" method="post">
+                    <button type="submit" class="btn">测试所有节点</button>
+                </form>
+                <form action="/dashboard/nodes/rename" method="post">
+                    <button type="submit" class="btn">重命名节点</button>
+                </form>
+                <form action="/dashboard/output/generate" method="post">
+                    <button type="submit" class="btn btn-primary">生成订阅文件</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="node-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>名称</th>
+                        <th>类型</th>
+                        <th>地址</th>
+                        <th>端口</th>
+                        <th>状态</th>
+                        <th>延迟</th>
+                        <th>API支持</th>
+                        <th>订阅来源</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .nodes }}
+                    <tr>
+                        <td>{{ .Name }}</td>
+                        <td>{{ .Type }}</td>
+                        <td>{{ .Server }}</td>
+                        <td>{{ .Port }}</td>
+                        <td class="status-cell">
+                            {{ if .Active }}
+                            <span class="status active">可用</span>
+                            {{ else }}
+                            <span class="status inactive">不可用</span>
+                            {{ end }}
+                        </td>
+                        <td>{{ if .Delay }}{{ .Delay }}ms{{ else }}-{{ end }}</td>
+                        <td class="api-cell">
+                            {{ range $name, $support := .APIConnectivity }}
+                                {{ if $support }}
+                                <span class="api-badge">{{ $name }}</span>
+                                {{ end }}
+                            {{ end }}
+                        </td>
+                        <td>{{ .Source }}</td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 {{ .title }} - 个人订阅管理工具</p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 

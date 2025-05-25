@@ -107,7 +107,7 @@ func (s *OutputService) generateClashConfig(nodes []*model.ProxyNode, outputType
 		}
 		
 		// 如果有原始数据，直接使用
-		if node.RawData != nil && node.Type == "ss" || node.Type == "vmess" || node.Type == "trojan" {
+		if node.RawData != nil && (node.Type == "ss" || node.Type == "vmess" || node.Type == "trojan") {
 			// 克隆原始数据
 			proxy := make(map[string]interface{})
 			for k, v := range node.RawData {
@@ -367,7 +367,7 @@ func (s *OutputService) generateV2rayConfig(nodes []*model.ProxyNode) error {
 			continue
 		}
 		
-		var url string
+		var nodeUrl string
 		switch node.Type {
 		case "vmess":
 			// 创建vmess链接
@@ -389,18 +389,20 @@ func (s *OutputService) generateV2rayConfig(nodes []*model.ProxyNode) error {
 			}
 			
 			vmessBase64 := base64.StdEncoding.EncodeToString(vmessJSON)
-			url = "vmess://" + vmessBase64
+			nodeUrl = "vmess://" + vmessBase64
 		case "ss":
 			// 创建ss链接
 			userInfo := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", node.Cipher, node.Password)))
-			url = fmt.Sprintf("ss://%s@%s:%d#%s", userInfo, node.Server, node.Port, url.QueryEscape(node.Name))
+			encodedName := url.QueryEscape(node.Name)
+			nodeUrl = fmt.Sprintf("ss://%s@%s:%d#%s", userInfo, node.Server, node.Port, encodedName)
 		case "trojan":
 			// 创建trojan链接
-			url = fmt.Sprintf("trojan://%s@%s:%d#%s", node.Password, node.Server, node.Port, url.QueryEscape(node.Name))
+			encodedName := url.QueryEscape(node.Name)
+			nodeUrl = fmt.Sprintf("trojan://%s@%s:%d#%s", node.Password, node.Server, node.Port, encodedName)
 		}
 		
-		if url != "" {
-			urls = append(urls, url)
+		if nodeUrl != "" {
+			urls = append(urls, nodeUrl)
 		}
 	}
 	
@@ -422,7 +424,7 @@ func (s *OutputService) generateBase64Config(nodes []*model.ProxyNode) error {
 			continue
 		}
 		
-		var url string
+		var nodeUrl string
 		switch node.Type {
 		case "vmess":
 			// 创建vmess链接
@@ -444,18 +446,20 @@ func (s *OutputService) generateBase64Config(nodes []*model.ProxyNode) error {
 			}
 			
 			vmessBase64 := base64.StdEncoding.EncodeToString(vmessJSON)
-			url = "vmess://" + vmessBase64
+			nodeUrl = "vmess://" + vmessBase64
 		case "ss":
 			// 创建ss链接
 			userInfo := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", node.Cipher, node.Password)))
-			url = fmt.Sprintf("ss://%s@%s:%d#%s", userInfo, node.Server, node.Port, url.QueryEscape(node.Name))
+			encodedName := url.QueryEscape(node.Name)
+			nodeUrl = fmt.Sprintf("ss://%s@%s:%d#%s", userInfo, node.Server, node.Port, encodedName)
 		case "trojan":
 			// 创建trojan链接
-			url = fmt.Sprintf("trojan://%s@%s:%d#%s", node.Password, node.Server, node.Port, url.QueryEscape(node.Name))
+			encodedName := url.QueryEscape(node.Name)
+			nodeUrl = fmt.Sprintf("trojan://%s@%s:%d#%s", node.Password, node.Server, node.Port, encodedName)
 		}
 		
-		if url != "" {
-			urls = append(urls, url)
+		if nodeUrl != "" {
+			urls = append(urls, nodeUrl)
 		}
 	}
 	
