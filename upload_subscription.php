@@ -1,7 +1,6 @@
 <?php
-// api/upload_subscription.php
+// api/upload_subscription.php - 单用户模式
 require_once 'utils.php';
-require 'csrf.php';
 
 function validateSubscriptionLink($link) {
     // 移除空白字符
@@ -53,19 +52,9 @@ function validateSubscriptionLink($link) {
 }
 
 header('Content-Type: application/json');
-// 检查用户是否已认证
-checkAuth();
 $pdo = getDbConnection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 验证 CSRF Token
-    $csrfToken = $_POST['csrf_token'] ?? '';
-    if (!verifyCsrfToken($csrfToken)) {
-        http_response_code(403);
-        echo json_encode(["error" => "CSRF validation failed"]);
-        exit;
-    }
-
     // 获取并验证输入
     $name = trim($_POST['name'] ?? '');
     $source = trim($_POST['source'] ?? '');
@@ -90,15 +79,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // 尝试插入数据库
-        $stmt = $pdo->prepare("INSERT INTO subscriptions (name, source, link, available_traffic, remark, expiration_date, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $source, $link, $availableTraffic, $remark, $expirationDate, $_SESSION['user_id']]);
+        // 尝试插入数据库，不再需要用户ID
+        $stmt = $pdo->prepare("INSERT INTO subscriptions (name, source, link, available_traffic, remark, expiration_date) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $source, $link, $availableTraffic, $remark, $expirationDate]);
         
         http_response_code(201);
         echo json_encode(["message" => "Subscription link uploaded successfully"]);
     } catch (PDOException $e) {
         // 检查是否违反了唯一约束（重复的链接）
-        if ($e->getCode() == '23000') { // 23000 是通用的唯一约束违例错误码，实际错误码可能需要从 $e->errorInfo 获取
+        if ($e->getCode() == '23000') { // 23000 是通用的唯一约束违例错误码
             http_response_code(400);
             echo json_encode(["error" => "This subscription link already exists"]);
         } else {

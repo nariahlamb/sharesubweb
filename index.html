@@ -3,277 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>订阅分享平台 - 登录</title>
-    <!-- 安全相关头部 -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- X-Frame-Options 应通过HTTP头设置，而非meta标签 -->
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self';">
-    
-    <!-- 预连接到关键域名以提高性能 -->
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-    
-    <!-- 确保预加载资源与实际使用资源完全匹配，包括完整性哈希值 -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" integrity="sha512-GQGU0fMMi238uA+a/bdWJfpUGKUkBdgfFdgBm72SUQ6BeyWjoY/ton0tEjH+OSH9iP4Dfh+7HM0I9f5eR0L/4w==" as="style" crossorigin="anonymous">
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js" integrity="sha512-pax4MlgXjHEPfCwcJLQhigY7+N8rt6bVvWLFyUMuxShv170X53TRzGPmPkZmGBhk+jikR8WBM4yl7A9WMHHqvg==" as="script" crossorigin="anonymous">
-    <link rel="preload" href="/assets/js/login.js" as="script">
-    
-    <!-- 使用SRI (Subresource Integrity)提高安全性 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" integrity="sha512-c42qTSw/wPZ3/5LBzD+Bw5f7bSF2oxou6wEb+I/lqeaKV5FDIfMvvRp772y4jcJLKuGUOpbJMdg/BTl50fJYAw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" integrity="sha512-GQGU0fMMi238uA+a/bdWJfpUGKUkBdgfFdgBm72SUQ6BeyWjoY/ton0tEjH+OSH9iP4Dfh+7HM0I9f5eR0L/4w==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    
-    <!-- 内联关键CSS减少渲染阻塞 -->
+    <title>个人订阅管理系统</title>
+    <link rel="stylesheet" href="/css/bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/animate.css/4.1.1/animate.min.css">
     <style>
-        /* 自定义样式优化 */
         body {
-            background: linear-gradient(to right, #6a11cb, #2575fc);
-            display: flex;
+            background-color: #f8f9fa;
+        }
+        .subscription-table {
+            margin: 20px auto;
+            width: 100%;
+            max-width: 1200px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        th {
+            background-color: #007bff;
+            color: #000000;
+            cursor: pointer;
+        }
+        .details-row {
+            background-color: #f1f1f1;
+        }
+        .pagination {
             justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #fff;
-            font-size: calc(16px + 0.5vw);
-            margin: 0;
+            margin-top: 20px;
         }
-        .container {
+        .navbar-brand {
+            font-weight: bold;
+        }
+        #node-count {
+            font-size: 1.5rem;
             text-align: center;
-            width: 90%;
-            max-width: 600px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.8s ease forwards;
         }
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
+        @media (max-width: 768px) {
+            .subscription-table {
+                width: 100%;
+                max-width: 100%;
             }
         }
-        .btn {
-            margin-bottom: 1rem;
-            width: 100%;
-            padding: 0.75rem 1.25rem;
-            font-size: calc(14px + 0.5vw);
-            position: relative;
-            overflow: hidden;
-        }
-        .btn::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: -100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: 0.5s;
-        }
-        .btn:hover::after {
-            left: 100%;
-        }
-        .btn-primary {
-            background-color: #ff6f61;
-            border: none;
-            box-shadow: 0px 5px 15px rgba(255, 111, 97, 0.4);
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            background-color: #ff8e7f;
-            transform: translateY(-2px);
-        }
-        .btn-primary:active {
-            transform: translateY(1px);
-        }
-        .btn-secondary {
-            background-color: #4a90e2;
-            border: none;
-            box-shadow: 0px 5px 15px rgba(74, 144, 226, 0.4);
-            transition: all 0.3s ease;
-        }
-        .btn-secondary:hover {
-            background-color: #357abd;
-            transform: translateY(-2px);
-        }
-        .footer {
+        .copy-success {
             position: fixed;
-            bottom: 10px;
-            width: 100%;
-            text-align: center;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745;
             color: #fff;
-            font-size: calc(12px + 0.3vw);
-        }
-        h1 {
-            font-size: calc(24px + 1.5vw);
-        }
-        p.lead {
-            font-size: calc(16px + 0.8vw);
-        }
-        #userGuidelinesModal .modal-content {
-            background: rgba(255, 255, 255, 0.9);
-            color: #000;
-        }
-        .button-container {
-            max-width: 400px;
-            margin: 0 auto;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            z-index: 9999;
         }
         /* 加载指示器样式 */
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        /* 错误提示样式 */
-        .error-message {
-            color: #ff4b5c;
-            background: rgba(255, 75, 92, 0.1);
-            border-radius: 4px;
-            padding: 10px;
-            margin: 10px 0;
-            display: none;
-        }
-        /* 离线状态通知 */
-        .offline-notice {
+        #loading-indicator {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background-color: #ff4b5c;
-            color: white;
-            text-align: center;
-            padding: 10px;
-            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             display: none;
-            z-index: 9999;
+            z-index: 10000;
         }
-        /* 移除Modal遮罩样式 */
-        .modal-backdrop {
-            z-index: 1040 !important;
+        #loading-indicator .spinner-border {
+            width: 3rem;
+            height: 3rem;
         }
-        /* 确保modal消失后不影响页面交互 */
-        .modal, .modal-backdrop {
-            transition: opacity 0.3s ease-out;
-        }
-        /* 添加加载中动画效果 */
-        .page-loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+        /* 添加样式用于一行显示五个 */
+        #selected-subscriptions-list {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
+            flex-wrap: wrap; /* 自动换行 */
+            list-style: none; /* 去掉列表默认样式 */
+            padding: 0;
+            margin: 0;
         }
-        .page-loading.loaded {
-            display: none;
+
+        #selected-subscriptions-list li {
+            flex: 1 1 calc(20% - 10px); /* 每个占20%宽度，减去间距 */
+            margin: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            #selected-subscriptions-list li {
+                flex: 1 1 calc(50% - 10px); /* 屏幕窄时每行显示两个 */
+            }
+        }
+
+        @media (max-width: 480px) {
+            #selected-subscriptions-list li {
+                flex: 1 1 calc(100% - 10px); /* 更窄时每行显示一个 */
+            }
         }
     </style>
 </head>
 <body>
-    <!-- 页面加载指示器 -->
-    <div id="pageLoading" class="page-loading">
-        <div class="spinner" style="width: 50px; height: 50px;"></div>
-    </div>
-
-    <!-- 离线通知 -->
-    <div class="offline-notice" id="offlineNotice">
-        您当前处于离线状态，请检查网络连接
-    </div>
-
-    <div class="container">
-        <h1 class="display-4">欢迎来到订阅分享平台</h1>
-        <p class="lead">通过Linux do登录并开始分享您的订阅链接。</p>
-        <hr class="my-4">
-        <div id="errorMessage" class="error-message"></div>
-        <div class="button-container">
-            <button id="loginButton" class="btn btn-primary btn-lg">
-                使用OAuth2登录
-            </button>
-            <button id="donateButton" class="btn btn-secondary btn-lg">
-                请我喝咖啡
-            </button>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">个人订阅管理系统</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><a class="nav-link" href="uplode.html">上传订阅</a></li>
+                <li class="nav-item"><a class="nav-link" href="user_subscriptions.php">我的订阅</a></li>
+                <li class="nav-item"><a class="nav-link" href="leaderboard.html">排行榜</a></li>
+            </ul>
         </div>
     </div>
-    <div class="footer">
-        power by Drlinzefeng
+</nav>
+
+<!-- 加载指示器 -->
+<div id="loading-indicator">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">加载中...</span>
+    </div>
+</div>
+
+<div class="container-fluid animate__animated animate__fadeIn">
+    <h2 class="text-center mt-4 animate__animated animate__fadeInDown">
+        个人订阅管理系统
+    </h2>
+    <div class="mb-3 text-center">
+        <div id="node-count" class="fw-bold">目前有 0 个节点</div>
     </div>
 
-    <!-- 用户守则弹出框 -->
-    <div class="modal fade" id="userGuidelinesModal" tabindex="-1" aria-labelledby="userGuidelinesModalLabel" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="userGuidelinesModalLabel">用户守则</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>规则（注：本网站为linux do论坛的内部网站，只支持linux do登录，不对外开放)</p>
-                    <ol>
-                        <li>根据要求规定用户拉取订阅 IP 数量单日不能超过 5 个（所以大家要设置本机不通过代理拉取，这个规则强制限制！！！）</li>
-                        <li>单订阅拉取单日不超过 30 次（比 1h 一次多一点点）（由于误封实在太多，很多小白不会调整订阅间隔，这个规则暂时没有实行）</li>
-                        <li>大家如果上传机场面板（一般都有做 UA 识别兼容的）导出的订阅链接，则大概率不会导致错误，如果想直接分享链接支持（全协议）。本机代理后不会给机场传递用户 IP，只会显示代理后的 IP（我知道这样会漏源，请大家不要打我）防止机场觉得过多用户订阅</li>
-                        <li>我每天（随机时间）会清理部分对于我的部署服务器来说无法正常拉取的节点（半自动化有个很丑的面板，可能会误伤，但是存下来的基本上都是活的）</li>
-                         <li>需要订阅转换的，可以单独勾选一个，然后点击聚合订阅也是没有问题的。</li>
-                    </ol>
-                    <p>暂时就这么多，建议大家遵守如果有意见可以评论区提一下（<a href="https://linux.do/t/topic/255350" target="_blank" rel="noopener noreferrer">https://linux.do/t/topic/255350</a>）</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="modalCloseBtn" data-bs-dismiss="modal">我已知晓</button>
-                </div>
-            </div>
+    <!-- 搜索框 -->
+    <div class="mb-4">
+        <input type="text" id="search-input" class="form-control" placeholder="搜索订阅...">
+    </div>
+
+    <!-- 二级菜单和按钮开始 -->
+    <div class="mb-4">
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="aggregationDropdown" 
+                data-bs-toggle="dropdown" aria-expanded="false">
+                选择您的软件
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="aggregationDropdown">
+                <li class="dropdown-header">请选择您的软件</li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="clashr" id="target-clashr"><label class="form-check-label" for="target-clashr">ClashR</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="quan" id="target-quan"><label class="form-check-label" for="target-quan">Quantumult</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="quanx" id="target-quanx"><label class="form-check-label" for="target-quanx">Quantumult X</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="loon" id="target-loon"><label class="form-check-label" for="target-loon">Loon</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="ss" id="target-ss"><label class="form-check-label" for="target-ss">SS (SIP002)</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="sssub" id="target-sssub"><label class="form-check-label" for="target-sssub">SS Android</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="ssd" id="target-ssd"><label class="form-check-label" for="target-ssd">SSD</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="ssr" id="target-ssr"><label class="form-check-label" for="target-ssr">SSR</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surfboard" id="target-surfboard"><label class="form-check-label" for="target-surfboard">Surfboard</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surge&ver=2" id="target-surge2"><label class="form-check-label" for="target-surge2">Surge 2</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surge&ver=3" id="target-surge3"><label class="form-check-label" for="target-surge3">Surge 3</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surge&ver=4" id="target-surge4"><label class="form-check-label" for="target-surge4">Surge 4</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="surge&ver=5" id="target-surge5"><label class="form-check-label" for="target-surge5">Surge 5</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="v2ray" id="target-v2ray"><label class="form-check-label" for="target-v2ray">V2Ray</label></div></li>
+                <li><div class="form-check px-3"><input class="form-check-input target-radio" type="radio" name="aggregationOptions" value="singbox" id="target-singbox"><label class="form-check-label" for="target-singbox">Singbox</label></div></li>
+            </ul>
         </div>
+        <button id="generate-selected-link-btn" class="btn btn-primary mt-3">聚合选择后的订阅</button>
+        <button id="generate-all-link-btn" class="btn btn-secondary mt-3">聚合全部订阅</button>
+    </div>
+    <!-- 二级菜单和按钮结束 -->
+
+    <!-- 已选择的订阅显示区域 -->
+    <div class="mb-4">
+        <h5>已选择的订阅：</h5>
+        <ul id="selected-subscriptions-list"></ul>
     </div>
 
-    <!-- 使用SRI的脚本标签，添加data-cfasync属性避免Rocket Loader干扰 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js" integrity="sha512-pax4MlgXjHEPfCwcJLQhigY7+N8rt6bVvWLFyUMuxShv170X53TRzGPmPkZmGBhk+jikR8WBM4yl7A9WMHHqvg==" crossorigin="anonymous" referrerpolicy="no-referrer" data-cfasync="false"></script>
-    
-    <!-- 外部JS文件加载，置于页面底部以避免阻塞渲染 -->
-    <script src="/assets/js/login.js" data-cfasync="false" defer></script>
-    
-    <!-- 添加基本的JS -->
-    <script>
-        // 页面加载完成后隐藏加载指示器
-        window.addEventListener('load', function() {
-            document.getElementById('pageLoading').classList.add('loaded');
-        });
-        
-        // 安全重定向函数
-        function safeRedirect(url) {
-            if (url.startsWith('https://')) {
-                window.location.href = url;
+    <!-- 生成的链接和所选订阅信息显示区域 -->
+    <div id="generated-link-container" class="mt-3" style="display: none;">
+        <h5>您的聚合链接：</h5>
+        <input type="text" id="generated-link" class="form-control" readonly>
+        <p>您已选择以下订阅：</p>
+        <ul id="selected-subscriptions-names" class="list-group"></ul>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered subscription-table animate__animated animate__zoomIn">
+            <thead>
+                <tr>
+                    <th>选择</th>
+                    <th onclick="sortTable('name')">订阅名称 <i class="fa-solid fa-sort" id="sort-icon-name"></i></th>
+                    <th onclick="sortTable('username')">提供用户 <i class="fa-solid fa-sort" id="sort-icon-username"></i></th>
+                    <th onclick="sortTable('weekly_subs')">被订阅次数 <i class="fa-solid fa-sort" id="sort-icon-weekly_subs"></i></th>
+                    <th onclick="sortTable('available_traffic')">可用流量 (G) <i class="fa-solid fa-sort" id="sort-icon-available_traffic"></i></th>
+                    <th onclick="sortTable('remaining_days')">剩余天数 <i class="fa-solid fa-sort" id="sort-icon-remaining_days"></i></th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="subscriptions-body">
+                <!-- 动态渲染订阅数据 -->
+            </tbody>
+        </table>
+    </div>
+    <nav>
+        <ul class="pagination" id="pagination"></ul>
+    </nav>
+</div>
+<div id="copy-success" class="copy-success">复制成功！</div>
+
+<link rel="stylesheet" href="/css/bootstrap/5.1.3/css/bootstrap.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.10/clipboard.min.js"></script>
+
+<!-- 添加用于处理未授权重定向的内联JavaScript -->
+<script>
+// 在页面加载完成后执行
+document.addEventListener('DOMContentLoaded', function() {
+    // 拦截所有fetch请求
+    const originalFetch = window.fetch;
+    window.fetch = async function() {
+        try {
+            const response = await originalFetch.apply(this, arguments);
+            
+            // 检查自定义重定向头部
+            if (response.headers.has('X-Redirect-To')) {
+                const redirectUrl = response.headers.get('X-Redirect-To');
+                console.log('收到重定向请求，正在跳转到:', redirectUrl);
+                window.location.href = redirectUrl;
+                return new Response(JSON.stringify({}));
+            }
+            
+            // 如果状态是401，执行重定向
+            if (response.status === 401) {
+                console.log('检测到未授权状态，正在重定向到首页');
+                window.location.href = '/index.html';
+                return new Response(JSON.stringify({}));
+            }
+            
+            return response;
+        } catch (error) {
+            console.error('请求失败:', error);
+            // 如果捕获到网络错误，可能是会话已过期
+            const subscriptionsBody = document.getElementById('subscriptions-body');
+            if (subscriptionsBody) {
+                // 处理网络错误
             }
         }
-        
-        // 为捐赠按钮添加事件监听
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('donateButton').addEventListener('click', function() {
-                safeRedirect('https://juanzen.linzefeng.top/');
-            });
-            
-            // 监听网络状态
-            window.addEventListener('online', function() {
-                document.getElementById('offlineNotice').style.display = 'none';
-            });
-            
-            window.addEventListener('offline', function() {
-                document.getElementById('offlineNotice').style.display = 'block';
-            });
-        });
-    </script>
+    }
+});
+</script>
+
 </body>
 </html>

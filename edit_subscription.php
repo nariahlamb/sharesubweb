@@ -1,8 +1,7 @@
 <?php
-// edit_subscription.php
+// edit_subscription.php - 单用户模式
 
 require_once 'utils.php';
-checkAuth();
 $pdo = getDbConnection();
 
 // 获取订阅ID
@@ -11,16 +10,13 @@ if ($subscriptionId <= 0) {
     die("无效的请求");
 }
 
-// 获取当前用户ID
-$userId = $_SESSION['user_id'];
-
-// 获取订阅信息，确保是当前用户的订阅
-$stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE id = ? AND created_by = ?");
-$stmt->execute([$subscriptionId, $userId]);
+// 获取订阅信息，无需检查用户ID
+$stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE id = ?");
+$stmt->execute([$subscriptionId]);
 $subscription = $stmt->fetch();
 
 if (!$subscription) {
-    die("订阅不存在或没有权限修改该订阅");
+    die("订阅不存在");
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -37,9 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 如果过期时间为空，将其设置为 NULL
         $expirationDate = $expirationDate === '' ? null : $expirationDate;
 
-        // 更新订阅信息，包括可空的过期时间
-        $stmt = $pdo->prepare("UPDATE subscriptions SET name = ?, link = ?, available_traffic = ?, remark = ?, expiration_date = ? WHERE id = ? AND created_by = ?");
-        $stmt->execute([$name, $link, $availableTraffic, $remark, $expirationDate, $subscriptionId, $userId]);
+        // 更新订阅信息，不检查用户ID
+        $stmt = $pdo->prepare("UPDATE subscriptions SET name = ?, link = ?, available_traffic = ?, remark = ?, expiration_date = ? WHERE id = ?");
+        $stmt->execute([$name, $link, $availableTraffic, $remark, $expirationDate, $subscriptionId]);
         
         header("Location: user_subscriptions.php");
         exit();

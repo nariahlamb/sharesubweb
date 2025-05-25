@@ -4,7 +4,7 @@
     <!-- 元信息 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>上传订阅链接</title>
+    <title>上传订阅链接 - 个人订阅管理系统</title>
     <!-- 引入 Bootstrap 和 Axios -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
@@ -45,19 +45,14 @@
     <!-- 导航栏 -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
         <div class="container-fluid">
-            <a class="navbar-brand" href="index.html">订阅分享平台</a>
+            <a class="navbar-brand" href="index.html">个人订阅管理系统</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="uplode.html">上传订阅</a></li>
-                    <li class="nav-item"><a class="nav-link" href="display.html">查看订阅</a></li>
-                    <li class="nav-item"><a class="nav-link" href="leaderboard.html">排行榜</a></li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item"><span class="nav-link" id="welcomeUser">欢迎，<?php echo htmlspecialchars($_SESSION['username'] ?? '用户'); ?></span></li>
-                    <li class="nav-item"><a class="nav-link" href="logout.php">登出</a></li>
+                    <li class="nav-item"><a class="nav-link" href="user_subscriptions.php">我的订阅</a></li>
                 </ul>
             </div>
         </div>
@@ -92,25 +87,11 @@
                 <label for="expiration_date" class="form-label">过期时间</label>
                 <input type="date" class="form-control" id="expiration_date" name="expiration_date">
             </div>
-            <!-- CSRF Token 动态注入 -->
-            <input type="hidden" id="csrf_token" name="csrf_token">
             <button type="submit" class="btn btn-primary w-100 mt-3">上传</button>
         </form>
     </div>
 
     <script>
-        // 在页面加载完成后获取 CSRF Token
-        document.addEventListener('DOMContentLoaded', function() {
-            axios.get('/get_csrf_token.php')
-                .then(response => {
-                    document.getElementById('csrf_token').value = response.data.csrf_token;
-                })
-                .catch(error => {
-                    console.error("获取 CSRF Token 失败", error);
-                    showAlert('danger', '无法获取 CSRF Token');
-                });
-        });
-
         // 表单提交事件处理
         document.getElementById('uploadForm').addEventListener('submit', function(event) {
             event.preventDefault();
@@ -145,7 +126,6 @@
             const available_traffic = document.getElementById('available_traffic').value;
             const remark = document.getElementById('remark').value;
             const expiration_date = document.getElementById('expiration_date').value;
-            const csrf_token = document.getElementById('csrf_token').value;
 
             // 对每个有效的链接，使用异步方式调用上传API
             let uploadPromises = validLinks.map(link => {
@@ -156,7 +136,6 @@
                 formData.append('available_traffic', available_traffic);
                 formData.append('remark', remark);
                 formData.append('expiration_date', expiration_date);
-                formData.append('csrf_token', csrf_token);
 
                 return axios.post('/upload_subscription.php', formData)
                     .then(response => {

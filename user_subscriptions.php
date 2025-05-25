@@ -1,46 +1,22 @@
 <?php
-// user_subscriptions.php
+// my_subscriptions.php - 单用户版个人订阅管理页面
 
 require_once 'utils.php';
-checkAuth();
 $pdo = getDbConnection();
 
-// 获取当前用户的ID
-$userId = $_SESSION['user_id'];
-
-// 获取用户分享的订阅，并获取每个订阅的唯一IP数量
+// 获取所有订阅，无需用户ID过滤
 $stmt = $pdo->prepare("
-    SELECT s.*, COUNT(DISTINCT ui.ip_address) AS unique_ips
+    SELECT s.*
     FROM subscriptions s
-    LEFT JOIN user_ips ui ON s.id = ui.subscription_id
-    WHERE s.created_by = ?
-    GROUP BY s.id
     ORDER BY s.created_at DESC
 ");
-$stmt->execute([$userId]);
+$stmt->execute();
 $subscriptions = $stmt->fetchAll();
-
-// 获取用户使用过的IP列表
-$ipStmt = $pdo->prepare("SELECT DISTINCT ip_address FROM user_ips WHERE user_id = ?");
-$ipStmt->execute([$userId]);
-$ips = $ipStmt->fetchAll(PDO::FETCH_COLUMN);
-
-// 统计独立IP数量
-$uniqueIpCount = count($ips);
 
 require 'templates/header.php';
 ?>
 
 <h2>我的订阅</h2>
-
-<!-- 显示用户使用过的IP数量和列表 -->
-<p>您使用过的独立IP数量：<strong><?php echo $uniqueIpCount; ?></strong></p>
-<p>使用过的IP列表：</p>
-<ul>
-    <?php foreach ($ips as $ip): ?>
-        <li><?php echo htmlspecialchars($ip); ?></li>
-    <?php endforeach; ?>
-</ul>
 
 <!-- 表格样式 -->
 <style>

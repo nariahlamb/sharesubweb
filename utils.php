@@ -1,7 +1,8 @@
 <?php
-// utils.php
+// utils.php - 单用户模式版本
 
-session_start();
+// 不需要会话
+// session_start(); - 已移除，单用户模式不需要会话
 
 $config = require 'config.php';
 
@@ -38,7 +39,7 @@ function getRedis() {
     return $redis;
 }
 
-// 生成10位UUID
+// 生成10位UUID - 保留，用于生成唯一标识
 function generateUUID() {
     return substr(bin2hex(random_bytes(5)), 0, 10);
 }
@@ -69,30 +70,27 @@ function getOAuthUser($accessToken) {
     return json_decode($response, true);
 }
 
-// 处理后的订阅链接生成
-function generateProxyLink($uuid, $subscriptionId) {
+// 处理后的订阅链接生成 - 修改为无需uuid参数
+function generateProxyLink($subscriptionId) {
     global $config;
-    return "{$config['base_domain']}/proxy.php?uuid={$uuid}&sid={$subscriptionId}";
+    return "{$config['base_domain']}/proxy.php?sid={$subscriptionId}";
 }
 
-// 检查用户是否登录（用于页面认证）
+// 单用户模式下，以下认证功能不再需要
+// 但为了兼容性，保留函数但简化实现
+
 function checkAuth() {
-    if (empty($_SESSION['user_id'])) {
-        header("Location: index.php");
-        exit();
-    }
+    // 单用户模式不需要认证，函数为空
+    return true;
 }
 
-// 检查用户是否认证（用于API认证）
 function isUserAuthenticated() {
-    return isset($_SESSION['user_id']);
+    // 单用户模式总是认证通过
+    return true;
 }
 
-// 管理员认证检查
 function checkAdminAuth() {
-    if (empty($_SESSION['is_admin'])) {
-        header('Location: admin_login.php');
-        exit();
-    }
+    // 单用户模式不需要管理员认证
+    return true;
 }
 ?>
