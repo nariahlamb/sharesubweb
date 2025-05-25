@@ -35,4 +35,4 @@ require (
 	google.golang.org/protobuf v1.31.0 // indirect
 )
 
-replace github.com/nariahlamb/sharesubweb => ./
+replace github.com/nariahlamb/sharesubweb => E:/github/sharesubweb
