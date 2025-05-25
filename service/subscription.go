@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -414,4 +412,20 @@ func (s *SubscriptionService) GetActiveNodes() []*model.ProxyNode {
 	}
 	
 	return activeNodes
+}
+
+// GetNodeByID 根据ID获取节点
+func (s *SubscriptionService) GetNodeByID(id string) *model.ProxyNode {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	
+	for _, sub := range s.subscriptions {
+		for _, node := range sub.Nodes {
+			if node.ID == id {
+				return node
+			}
+		}
+	}
+	
+	return nil
 } 

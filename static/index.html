@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShareSubWeb - 代理节点订阅管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container { 
+            max-width: 960px; 
+            margin-top: 40px;
+        }
+        .feature-icon {
+            font-size: 2rem;
+            color: #0d6efd;
+            margin-bottom: 1rem;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+        }
+        .tab-content {
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-top: 0;
+            border-radius: 0 0 0.25rem 0.25rem;
+        }
+        #subscriptions-container .card,
+        #nodes-container .card {
+            margin-bottom: 1rem;
+        }
+        .node-badge {
+            font-size: 0.8rem;
+            margin-right: 0.3rem;
+            margin-bottom: 0.3rem;
+        }
+        #loading-spinner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            text-align: center;
+            color: white;
+        }
+        #loading-spinner div {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-spinner">
+        <div>
+            <div class="spinner-border" role="status"></div>
+            <p>处理中，请稍候...</p>
+        </div>
+    </div>
+    
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">ShareSubWeb</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">首页</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" 
+                           aria-expanded="false">订阅下载</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/api/config?format=clash" target="_blank">Clash</a></li>
+                            <li><a class="dropdown-item" href="/api/config?format=singbox" target="_blank">SingBox</a></li>
+                            <li><a class="dropdown-item" href="/api/config?format=v2ray" target="_blank">V2ray</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <span class="navbar-text" id="version-info">
+                    版本: 加载中...
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="text-center mb-5">
+            <h1 class="display-4 mb-3">ShareSubWeb</h1>
+            <p class="lead">轻量级的个人代理节点订阅管理工具</p>
+        </header>
+        
+        <div class="row">
+            <div class="col-md-3">
+                <ul class="nav nav-pills flex-column mb-3" id="mainTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="dashboard-tab" data-bs-toggle="pill" 
+                                data-bs-target="#dashboard" type="button" role="tab" 
+                                aria-controls="dashboard" aria-selected="true">仪表盘</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="subscriptions-tab" data-bs-toggle="pill" 
+                                data-bs-target="#subscriptions" type="button" role="tab" 
+                                aria-controls="subscriptions" aria-selected="false">订阅管理</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="nodes-tab" data-bs-toggle="pill" 
+                                data-bs-target="#nodes" type="button" role="tab" 
+                                aria-controls="nodes" aria-selected="false">节点列表</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="pill" 
+                                data-bs-target="#settings" type="button" role="tab" 
+                                aria-controls="settings" aria-selected="false">系统设置</button>
+                    </li>
+                </ul>
+                
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title">快捷操作</h5>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-sm" id="refresh-all-btn">
+                                刷新所有订阅
+                            </button>
+                            <button class="btn btn-primary btn-sm" id="check-nodes-btn">
+                                测试所有节点
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-9">
+                <div class="tab-content" id="mainTabContent">
+                    <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+                        <h3>系统概览</h3>
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">订阅数</h5>
+                                        <p class="card-text display-6" id="sub-count">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">总节点数</h5>
+                                        <p class="card-text display-6" id="node-count">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">可用节点</h5>
+                                        <p class="card-text display-6" id="active-node-count">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <h4>订阅信息</h4>
+                        <div id="dashboard-subscriptions">
+                            <div class="text-center p-5">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p>加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="subscriptions" role="tabpanel" aria-labelledby="subscriptions-tab">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h3>订阅管理</h3>
+                            <button class="btn btn-primary" id="add-subscription-btn">添加订阅</button>
+                        </div>
+                        <div id="subscriptions-container"></div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="nodes" role="tabpanel" aria-labelledby="nodes-tab">
+                        <h3>节点列表</h3>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="node-search" placeholder="搜索节点...">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="show-active-only" value="1">
+                                <label class="form-check-label" for="show-active-only">仅显示可用节点</label>
+                            </div>
+                        </div>
+                        <div id="nodes-container"></div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                        <h3>系统设置</h3>
+                        <p>此功能尚在开发中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加订阅模态框 -->
+    <div class="modal fade" id="addSubscriptionModal" tabindex="-1" aria-labelledby="addSubscriptionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addSubscriptionModalLabel">添加订阅</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-subscription-form">
+                        <div class="mb-3">
+                            <label for="sub-name" class="form-label">订阅名称</label>
+                            <input type="text" class="form-control" id="sub-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sub-url" class="form-label">订阅地址</label>
+                            <input type="text" class="form-control" id="sub-url" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sub-type" class="form-label">订阅类型</label>
+                            <select class="form-select" id="sub-type" required>
+                                <option value="clash">Clash</option>
+                                <option value="v2ray">V2ray</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sub-remarks" class="form-label">备注</label>
+                            <textarea class="form-control" id="sub-remarks" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-subscription-btn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取版本信息
+            fetch('/api/version')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('version-info').textContent = 
+                        `版本: ${data.version} (${data.build_time})`;
+                })
+                .catch(error => console.error('Error fetching version:', error));
+
+            // 加载订阅信息
+            loadSubscriptions();
+            
+            // 初始化事件监听
+            document.getElementById('refresh-all-btn').addEventListener('click', refreshAllSubscriptions);
+            document.getElementById('check-nodes-btn').addEventListener('click', checkAllNodes);
+            document.getElementById('add-subscription-btn').addEventListener('click', showAddSubscriptionModal);
+            document.getElementById('save-subscription-btn').addEventListener('click', saveSubscription);
+            document.getElementById('show-active-only').addEventListener('change', loadNodes);
+            document.getElementById('node-search').addEventListener('input', loadNodes);
+            
+            // 当切换到节点标签页时加载节点
+            document.getElementById('nodes-tab').addEventListener('shown.bs.tab', function() {
+                loadNodes();
+            });
+        });
+
+        function showLoading() {
+            document.getElementById('loading-spinner').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-spinner').style.display = 'none';
+        }
+
+        function loadSubscriptions() {
+            showLoading();
+            fetch('/api/subscriptions')
+                .then(response => response.json())
+                .then(data => {
+                    updateDashboard(data);
+                    renderSubscriptionsList(data);
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error loading subscriptions:', error);
+                    hideLoading();
+                });
+        }
+
+        function updateDashboard(subscriptions) {
+            document.getElementById('sub-count').textContent = subscriptions.length;
+            
+            let totalNodes = 0;
+            let activeNodes = 0;
+            
+            subscriptions.forEach(sub => {
+                totalNodes += sub.total_nodes || 0;
+                activeNodes += sub.active_nodes || 0;
+            });
+            
+            document.getElementById('node-count').textContent = totalNodes;
+            document.getElementById('active-node-count').textContent = activeNodes;
+            
+            // 更新仪表盘订阅信息
+            const dashSubContainer = document.getElementById('dashboard-subscriptions');
+            if (subscriptions.length === 0) {
+                dashSubContainer.innerHTML = '<div class="alert alert-info">没有订阅信息，请添加订阅。</div>';
+            } else {
+                let html = '';
+                subscriptions.forEach(sub => {
+                    const lastUpdate = sub.last_update ? new Date(sub.last_update).toLocaleString() : '从未';
+                    html += `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">${sub.name}</h5>
+                                <p class="text-muted">${sub.remarks || '无备注'}</p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p>类型: <span class="badge bg-secondary">${sub.type}</span></p>
+                                        <p>节点: ${sub.active_nodes || 0} / ${sub.total_nodes || 0}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p>最后更新: ${lastUpdate}</p>
+                                        <button class="btn btn-sm btn-primary refresh-sub-btn" data-id="${sub.id}">刷新</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                dashSubContainer.innerHTML = html;
+                
+                // 添加刷新按钮事件
+                document.querySelectorAll('.refresh-sub-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        refreshSubscription(this.getAttribute('data-id'));
+                    });
+                });
+            }
+        }
+
+        function renderSubscriptionsList(subscriptions) {
+            const container = document.getElementById('subscriptions-container');
+            if (subscriptions.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">没有订阅信息，请添加订阅。</div>';
+                return;
+            }
+            
+            let html = '';
+            subscriptions.forEach(sub => {
+                const lastUpdate = sub.last_update ? new Date(sub.last_update).toLocaleString() : '从未';
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="card-title mb-0">${sub.name}</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-primary refresh-sub-btn" data-id="${sub.id}">刷新</button>
+                                    <button class="btn btn-sm btn-danger delete-sub-btn" data-id="${sub.id}">删除</button>
+                                </div>
+                            </div>
+                            <p class="text-muted">${sub.remarks || '无备注'}</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p>URL: <span class="text-truncate d-inline-block" style="max-width: 200px;">${sub.url}</span></p>
+                                    <p>类型: <span class="badge bg-secondary">${sub.type}</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p>节点: ${sub.active_nodes || 0} / ${sub.total_nodes || 0}</p>
+                                    <p>最后更新: ${lastUpdate}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // 添加刷新和删除按钮事件
+            document.querySelectorAll('.refresh-sub-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    refreshSubscription(this.getAttribute('data-id'));
+                });
+            });
+            
+            document.querySelectorAll('.delete-sub-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (confirm('确定要删除此订阅吗？')) {
+                        deleteSubscription(this.getAttribute('data-id'));
+                    }
+                });
+            });
+        }
+
+        function loadNodes() {
+            showLoading();
+            fetch('/api/nodes')
+                .then(response => response.json())
+                .then(data => {
+                    renderNodesList(data);
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error loading nodes:', error);
+                    hideLoading();
+                });
+        }
+
+        function renderNodesList(nodes) {
+            const container = document.getElementById('nodes-container');
+            if (nodes.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">没有可用节点，请添加或刷新订阅。</div>';
+                return;
+            }
+            
+            // 过滤节点
+            const showActiveOnly = document.getElementById('show-active-only').checked;
+            const searchText = document.getElementById('node-search').value.toLowerCase();
+            
+            const filteredNodes = nodes.filter(node => {
+                if (showActiveOnly && !node.active) return false;
+                if (searchText && !(
+                    (node.name && node.name.toLowerCase().includes(searchText)) || 
+                    (node.server && node.server.toLowerCase().includes(searchText))
+                )) return false;
+                return true;
+            });
+            
+            if (filteredNodes.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">没有符合条件的节点。</div>';
+                return;
+            }
+            
+            let html = '';
+            filteredNodes.forEach(node => {
+                const statusBadge = node.active ? 
+                    '<span class="badge bg-success">可用</span>' : 
+                    '<span class="badge bg-danger">不可用</span>';
+                
+                const latencyBadge = node.latency ? 
+                    `<span class="badge bg-primary node-badge">${node.latency}ms</span>` : '';
+                
+                const typeBadge = `<span class="badge bg-secondary node-badge">${node.type}</span>`;
+                
+                let apiBadges = '';
+                if (node.api_connectivity) {
+                    for (const [api, available] of Object.entries(node.api_connectivity)) {
+                        if (available) {
+                            apiBadges += `<span class="badge bg-info node-badge">${api}</span>`;
+                        }
+                    }
+                }
+                
+                let countryBadge = '';
+                if (node.ip_info && node.ip_info.country_code) {
+                    countryBadge = `<span class="badge bg-warning node-badge">${node.ip_info.country_code}</span>`;
+                }
+                
+                const lastCheck = node.last_check ? 
+                    new Date(node.last_check).toLocaleString() : '从未';
+                
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="card-title mb-0">${node.name}</h5>
+                                ${statusBadge}
+                            </div>
+                            <p class="mb-1">服务器: ${node.server}:${node.port}</p>
+                            <div class="mb-2">
+                                ${typeBadge}
+                                ${latencyBadge}
+                                ${countryBadge}
+                                ${apiBadges}
+                            </div>
+                            <p class="text-muted small mb-0">最后检测: ${lastCheck}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function refreshAllSubscriptions() {
+            if (!confirm('确定要刷新所有订阅吗？这可能需要一些时间。')) return;
+            
+            showLoading();
+            fetch('/api/subscriptions')
+                .then(response => response.json())
+                .then(subs => {
+                    // 创建刷新所有订阅的Promise数组
+                    const refreshPromises = subs.map(sub => 
+                        fetch(`/api/subscription/${sub.id}/refresh`, { method: 'POST' })
+                            .then(res => res.json())
+                    );
+                    
+                    // 等待所有刷新完成
+                    return Promise.all(refreshPromises);
+                })
+                .then(() => {
+                    // 刷新完成后重新加载订阅
+                    loadSubscriptions();
+                    alert('所有订阅刷新完成');
+                })
+                .catch(error => {
+                    console.error('Error refreshing all subscriptions:', error);
+                    hideLoading();
+                    alert('刷新订阅时发生错误');
+                });
+        }
+
+        function refreshSubscription(id) {
+            showLoading();
+            fetch(`/api/subscription/${id}/refresh`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(() => {
+                    loadSubscriptions();
+                })
+                .catch(error => {
+                    console.error('Error refreshing subscription:', error);
+                    hideLoading();
+                    alert('刷新订阅时发生错误');
+                });
+        }
+
+        function deleteSubscription(id) {
+            showLoading();
+            fetch(`/api/subscription/${id}`, {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(() => {
+                    loadSubscriptions();
+                })
+                .catch(error => {
+                    console.error('Error deleting subscription:', error);
+                    hideLoading();
+                    alert('删除订阅时发生错误');
+                });
+        }
+
+        function checkAllNodes() {
+            if (!confirm('确定要测试所有节点吗？这可能需要一些时间。')) return;
+            
+            showLoading();
+            fetch('/api/nodes/check', {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    alert('节点测试已启动，请稍后查看结果');
+                })
+                .catch(error => {
+                    console.error('Error checking nodes:', error);
+                    hideLoading();
+                    alert('测试节点时发生错误');
+                });
+        }
+
+        function showAddSubscriptionModal() {
+            // 清空表单
+            document.getElementById('add-subscription-form').reset();
+            // 显示模态框
+            new bootstrap.Modal(document.getElementById('addSubscriptionModal')).show();
+        }
+
+        function saveSubscription() {
+            // 获取表单数据
+            const name = document.getElementById('sub-name').value;
+            const url = document.getElementById('sub-url').value;
+            const type = document.getElementById('sub-type').value;
+            const remarks = document.getElementById('sub-remarks').value;
+            
+            if (!name || !url || !type) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            showLoading();
+            fetch('/api/subscription', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, url, type, remarks })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // 关闭模态框
+                    bootstrap.Modal.getInstance(document.getElementById('addSubscriptionModal')).hide();
+                    // 重新加载订阅
+                    loadSubscriptions();
+                })
+                .catch(error => {
+                    console.error('Error saving subscription:', error);
+                    hideLoading();
+                    alert('保存订阅时发生错误');
+                });
+        }
+    </script>
+</body>
+</html> 

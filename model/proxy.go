@@ -19,6 +19,11 @@ type ProxyNode struct {
 	TLS            bool      `json:"tls"`             // 是否启用TLS
 	Network        string    `json:"network"`         // 传输协议：tcp, ws, grpc等
 	UDP            bool      `json:"udp"`             // 是否支持UDP
+	Path           string    `json:"path,omitempty"`  // 路径(ws/grpc/h2)
+	ALPN           string    `json:"alpn,omitempty"`  // ALPN(tls)
+	SNI            string    `json:"sni,omitempty"`   // SNI(tls)
+	Host           string    `json:"host,omitempty"`  // Host(ws)
+	ServiceName    string    `json:"service_name,omitempty"` // 服务名称(grpc)
 	
 	// 测试结果
 	Latency        int       `json:"latency"`         // 延迟(ms)
@@ -27,19 +32,26 @@ type ProxyNode struct {
 	APIConnectivity map[string]bool `json:"api_connectivity"` // API连通性测试结果
 	IPInfo         *IPInfo   `json:"ip_info,omitempty"` // IP信息
 	LastCheck      time.Time `json:"last_check"`      // 最后测试时间
+	SuccessRate    int       `json:"success_rate"`    // 成功率(0-100)
+	OutletIP       string    `json:"outlet_ip"`       // 出口IP
 	
 	// 原始数据，保存原节点信息，以便输出时使用
 	RawData        map[string]interface{} `json:"-"`
+	GroupID        string    `json:"groupid,omitempty"`  // 分组ID
 }
 
 // IPInfo IP信息
 type IPInfo struct {
-	Country     string `json:"country"`      // 国家
-	CountryCode string `json:"country_code"` // 国家代码
-	Region      string `json:"region"`       // 地区
-	City        string `json:"city"`         // 城市
-	ISP         string `json:"isp"`          // ISP
-	ASN         string `json:"asn"`          // ASN
+	Country     string  `json:"country"`      // 国家
+	CountryCode string  `json:"country_code"` // 国家代码
+	Region      string  `json:"region"`       // 地区
+	City        string  `json:"city"`         // 城市
+	ISP         string  `json:"isp"`          // ISP
+	ASN         string  `json:"asn"`          // ASN
+	Org         string  `json:"org"`          // 组织
+	Lat         float64 `json:"lat"`          // 纬度
+	Lon         float64 `json:"lon"`          // 经度
+	TimeZone    string  `json:"timezone"`     // 时区
 }
 
 // Subscription 订阅信息
@@ -124,7 +136,7 @@ func (p *ProxyNode) RenameNode(template string) string {
 	// 速度信息
 	speed := ""
 	if p.Speed > 0 {
-		speed = fmt.Sprintf("%.1fMB", float64(p.Speed)/1024)
+		speed = fmt.Sprintf("%.1fMB/s", float64(p.Speed)/1024)
 	}
 	name = strings.ReplaceAll(name, "{速度}", speed)
 	
@@ -135,16 +147,30 @@ func (p *ProxyNode) RenameNode(template string) string {
 	}
 	name = strings.ReplaceAll(name, "{延迟}", latency)
 	
+	// 成功率
+	successRate := ""
+	if p.SuccessRate > 0 {
+		successRate = fmt.Sprintf("%d%%", p.SuccessRate)
+	}
+	name = strings.ReplaceAll(name, "{成功率}", successRate)
+	
 	// API可用性标签
 	apiTags := ""
 	for api, ok := range p.APIConnectivity {
 		if ok {
 			if api == "OpenAI" {
-				apiTags += "🤖"
+				apiTags += "Openai|"
 			} else if api == "Gemini" {
-				apiTags += "👾"
+				apiTags += "Gemini|"
+			} else if api == "YouTube" {
+				apiTags += "Youtube|"
+			} else if api == "Netflix" {
+				apiTags += "Netflix|"
 			}
 		}
+	}
+	if len(apiTags) > 0 {
+		apiTags = strings.TrimSuffix(apiTags, "|")
 	}
 	name = strings.ReplaceAll(name, "{API}", apiTags)
 	

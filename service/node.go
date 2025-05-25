@@ -1,16 +1,17 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
-	"net"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/nariahlamb/sharesubweb/config"
 	"github.com/nariahlamb/sharesubweb/model"
-	"net/url"
-	"strings"
 )
 
 // NodeService 节点服务
@@ -20,6 +21,7 @@ type NodeService struct {
 	checkInterval time.Duration
 	stopCh        chan struct{}
 	wg            sync.WaitGroup
+	proxyTester   *ProxyTester
 }
 
 // NewNodeService 创建节点服务
@@ -28,6 +30,7 @@ func NewNodeService(cfg *config.Config) *NodeService {
 		cfg:           cfg,
 		checkInterval: time.Duration(cfg.NodeCheck.Interval) * time.Minute,
 		stopCh:        make(chan struct{}),
+		proxyTester:   NewProxyTester(cfg.NodeCheck.Timeout),
 	}
 }
 
@@ -116,7 +119,7 @@ func (s *NodeService) CheckAllNodes() {
 // CheckNode 检测单个节点
 func (s *NodeService) CheckNode(node *model.ProxyNode) {
 	// 检测节点连通性
-	active, latency := s.checkNodeConnectivity(node)
+	active, latency := s.proxyTester.TestNodeConnectivity(node)
 	node.Active = active
 	node.Latency = latency
 	node.LastCheck = time.Now()
@@ -127,7 +130,7 @@ func (s *NodeService) CheckNode(node *model.ProxyNode) {
 	}
 
 	// 测试API连通性
-	if s.cfg.NodeCheck.APITest.Enable {
+	if s.cfg.NodeCheck.API.Enable {
 		s.checkAPIConnectivity(node)
 	}
 
@@ -139,37 +142,56 @@ func (s *NodeService) CheckNode(node *model.ProxyNode) {
 
 // 检测节点连通性
 func (s *NodeService) checkNodeConnectivity(node *model.ProxyNode) (bool, int) {
-	timeout := time.Duration(s.cfg.NodeCheck.Timeout) * time.Second
-	start := time.Now()
-
-	// 创建TCP连接测试
-	addr := fmt.Sprintf("%s:%d", node.Server, node.Port)
-	conn, err := net.DialTimeout("tcp", addr, timeout)
-	if err != nil {
-		return false, 0
-	}
-	defer conn.Close()
-
-	// 计算延迟
-	latency := int(time.Since(start).Milliseconds())
-	return true, latency
+	return s.proxyTester.TestNodeConnectivity(node)
 }
 
 // 检测API连通性
 func (s *NodeService) checkAPIConnectivity(node *model.ProxyNode) {
-	// 这里应该设置代理，但简化处理
-	// 实际上需要根据节点类型创建不同的代理客户端
-	for _, target := range s.cfg.NodeCheck.APITest.Targets {
-		// 模拟测试结果
-		// 在真实实现中，需要通过节点代理连接到API
-		success := false
+	// 初始化API连通性映射
+	if node.APIConnectivity == nil {
+		node.APIConnectivity = make(map[string]bool)
+	}
+	
+	// 获取API测试的超时配置，如果未配置则使用默认值
+	apiTimeout := s.cfg.NodeCheck.API.Timeout
+	if apiTimeout <= 0 {
+		apiTimeout = s.cfg.NodeCheck.Timeout // 使用通用超时
+	}
+	
+	// 获取重试次数
+	retryCount := s.cfg.NodeCheck.API.RetryCount
+	if retryCount <= 0 {
+		retryCount = 1 // 默认重试1次
+	}
+	
+	// 为每个目标API进行测试
+	for _, target := range s.cfg.NodeCheck.API.List {
+		// 默认为不可连接
+		node.APIConnectivity[target.Name] = false
 		
-		// 模拟测试结果，随机判定为成功或失败
-		// 在真实实现中，应该通过代理发送请求测试
-		if node.Latency < 200 {
-			success = true
+		// 准备请求URL，为特定API添加特殊路径
+		requestURL := target.URL
+		switch target.Name {
+		case "OpenAI":
+			requestURL = fmt.Sprintf("%s/v1/models", target.URL) // 使用OpenAI的models接口进行测试
+		case "Gemini":
+			requestURL = fmt.Sprintf("%s/v1beta/models", target.URL) // 使用Gemini的models接口进行测试
 		}
 		
+		// 准备请求头
+		headers := make(map[string]string)
+		headers["User-Agent"] = "ShareSubWeb/1.0"
+		headers["Content-Type"] = "application/json"
+		
+		// 添加配置中的自定义请求头
+		for key, value := range target.Headers {
+			headers[key] = value
+		}
+		
+		// 使用代理测试器测试API连通性
+		success := s.proxyTester.TestAPIConnectivity(node, requestURL, headers, retryCount)
+		
+		// 更新节点的API连通性
 		node.APIConnectivity[target.Name] = success
 	}
 }
@@ -177,63 +199,120 @@ func (s *NodeService) checkAPIConnectivity(node *model.ProxyNode) {
 // 检测IP质量
 func (s *NodeService) checkIPQuality(node *model.ProxyNode) {
 	// 获取IP信息的服务，如ipinfo.io
-	// 简化处理，实际上需要通过代理获取
+	// 初始化IP信息
 	if node.IPInfo == nil {
-		node.IPInfo = &model.IPInfo{}
-	}
-	
-	// 设置默认值
-	node.IPInfo.Country = "Unknown"
-	node.IPInfo.CountryCode = "UN"
-	
-	// 在真实实现中，应该通过代理访问IP信息API获取数据
-	// 这里仅做示例
-	if node.Server != "" {
-		// 解析IP
-		ips, err := net.LookupIP(node.Server)
-		if err == nil && len(ips) > 0 {
-			ip := ips[0].String()
-			
-			// 调用IP信息API
-			ipInfo, err := s.getIPInfo(ip)
-			if err == nil && ipInfo != nil {
-				node.IPInfo = ipInfo
-			}
+		node.IPInfo = &model.IPInfo{
+			Country: "Unknown",
+			CountryCode: "UN",
 		}
 	}
-}
-
-// 获取IP信息
-func (s *NodeService) getIPInfo(ip string) (*model.IPInfo, error) {
-	// 调用IP信息API
-	// 这里使用ipinfo.io作为示例
-	client := &http.Client{
-		Timeout: time.Duration(s.cfg.NodeCheck.IPQuality.Timeout) * time.Second,
+	
+	// 如果服务器地址为空，跳过
+	if node.Server == "" {
+		return
 	}
 	
-	reqURL := fmt.Sprintf("https://ipinfo.io/%s/json", url.PathEscape(ip))
-	resp, err := client.Get(reqURL)
+	// 尝试通过节点代理获取IP信息
+	client, err := s.proxyTester.CreateProxyHTTPClient(node)
 	if err != nil {
-		return nil, err
+		return
+	}
+	
+	// 访问IP信息API
+	ipInfoURL := "https://ipinfo.io/json"
+	req, err := http.NewRequest("GET", ipInfoURL, nil)
+	if err != nil {
+		return
+	}
+	
+	timeout := s.cfg.NodeCheck.IPQuality.Timeout
+	if timeout <= 0 {
+		timeout = 10 // 默认10秒
+	}
+	
+	// 设置超时上下文
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	req = req.WithContext(ctx)
+	defer cancel()
+	
+	// 发送请求
+	resp, err := client.Do(req)
+	if err != nil {
+		return
 	}
 	defer resp.Body.Close()
 	
+	// 解析响应
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("IP信息API请求失败: %d", resp.StatusCode)
+		return
 	}
 	
-	// 解析JSON响应
-	ipInfo := &model.IPInfo{}
+	// 读取响应
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
 	
-	// 简化处理，实际上需要解析JSON
-	ipInfo.Country = "United States"
-	ipInfo.CountryCode = "US"
-	ipInfo.Region = "California"
-	ipInfo.City = "San Francisco"
-	ipInfo.ISP = "Cloudflare"
-	ipInfo.ASN = "AS13335"
+	// 解析JSON
+	var ipInfo map[string]interface{}
+	if err := json.Unmarshal(body, &ipInfo); err != nil {
+		return
+	}
 	
-	return ipInfo, nil
+	// 更新IP信息
+	if country, ok := ipInfo["country"].(string); ok {
+		node.IPInfo.CountryCode = country
+	}
+	
+	if region, ok := ipInfo["region"].(string); ok {
+		node.IPInfo.Region = region
+	}
+	
+	if city, ok := ipInfo["city"].(string); ok {
+		node.IPInfo.City = city
+	}
+	
+	if org, ok := ipInfo["org"].(string); ok {
+		// 通常org格式为 "AS13335 Cloudflare, Inc."
+		parts := strings.SplitN(org, " ", 2)
+		if len(parts) > 0 {
+			node.IPInfo.ASN = parts[0]
+		}
+		if len(parts) > 1 {
+			node.IPInfo.ISP = parts[1]
+		} else {
+			node.IPInfo.ISP = org
+		}
+	}
+	
+	// 获取国家名称
+	if node.IPInfo.CountryCode != "" {
+		node.IPInfo.Country = getCountryName(node.IPInfo.CountryCode)
+	}
+}
+
+// getCountryName 根据国家代码获取国家名称
+func getCountryName(code string) string {
+	countryCodes := map[string]string{
+		"CN": "中国",
+		"HK": "香港",
+		"TW": "台湾",
+		"JP": "日本",
+		"KR": "韩国",
+		"SG": "新加坡",
+		"US": "美国",
+		"CA": "加拿大",
+		"GB": "英国",
+		"DE": "德国",
+		"FR": "法国",
+		"AU": "澳大利亚",
+		// 其他常见国家...
+	}
+	
+	if name, ok := countryCodes[code]; ok {
+		return name
+	}
+	return code
 }
 
 // RenameNodes 重命名节点

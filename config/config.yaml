@@ -2,6 +2,7 @@
 app:
   name: "ShareSubWeb"
   port: 8199
+  api-key: "" # API密钥，为空则不启用验证
 
 # 订阅源配置
 subscriptions:
@@ -21,11 +22,27 @@ node-check:
   # 测试API访问性
   api-test:
     enable: true
+    # API请求超时（秒）
+    timeout: 10
+    # 重试次数
+    retry-count: 2
     targets:
     - name: "OpenAI"
       url: "https://api.openai.com"
+      headers:
+        User-Agent: "ShareSubWeb/1.0"
     - name: "Gemini"
       url: "https://generativelanguage.googleapis.com"
+      headers:
+        User-Agent: "ShareSubWeb/1.0"
+    - name: "YouTube"
+      url: "https://www.youtube.com/premium"
+      headers:
+        User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
+    - name: "Netflix"
+      url: "https://www.netflix.com/title/80018499"
+      headers:
+        User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
   # IP质量测试
   ip-quality:
     enable: true
@@ -38,7 +55,7 @@ node-process:
     enable: true
     add-prefix: ""
     add-suffix: ""
-    template: "{名称}|{国家}{速度}{API}"
+    template: "🏳️‍🌈{国家} | ⬇️ {速度}|{延迟}|{API}" # 支持变量：{名称} {国家} {速度} {延迟} {API}
   # 节点过滤
   filter:
     enable: true
@@ -57,3 +74,26 @@ output:
     enable: true
   - type: "v2ray"
     enable: true
+  # Gist保存配置
+  gist-save: false
+  gist-token: ""
+  gist-id: ""
+  gist-desc: "ShareSubWeb自动更新的订阅"
+  gist-files:
+  - "config.yaml"
+  - "clash.yaml"
+  - "singbox.json"
+
+# 计划任务
+tasks:
+- name: "每6小时自动更新"
+  cron: "0 */6 * * *"
+  actions: [ "refresh", "check", "save" ]
+
+# WebHooks配置
+webhooks:
+- url: ""
+  method: "POST"
+  content-type: "application/json"
+  headers:
+    User-Agent: "ShareSubWeb/1.0"

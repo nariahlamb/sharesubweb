@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShareSubWeb - 订阅管理面板</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar-brand {
+            font-weight: 600;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-header {
+            font-weight: 600;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+        }
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        .stat-card .label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .status-badge {
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        .node-table th {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .node-table td {
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        footer {
+            font-size: 13px;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px 0;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">ShareSubWeb</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="homeLink"><i class="bi bi-house"></i> 首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="subMgmtLink"><i class="bi bi-list"></i> 订阅管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="nodeMgmtLink"><i class="bi bi-globe"></i> 节点管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="settingsLink"><i class="bi bi-gear"></i> 设置</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <button id="refreshBtn" class="btn btn-light btn-sm me-2">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新数据
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12 mb-4">
+                <div class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle-fill"></i> 服务器运行正常，上次更新时间: <span id="lastUpdate">刚刚</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="label"><i class="bi bi-bookmark"></i> 订阅总数</div>
+                    <div class="value" id="subCount">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="label"><i class="bi bi-diagram-3"></i> 节点总数</div>
+                    <div class="value" id="nodeCount">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="label"><i class="bi bi-lightning"></i> 活跃节点</div>
+                    <div class="value" id="activeNodeCount">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="label"><i class="bi bi-check2-circle"></i> 可用率</div>
+                    <div class="value" id="availabilityRate">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-list-ul"></i> 订阅列表</span>
+                        <button class="btn btn-sm btn-primary" id="addSubBtn">
+                            <i class="bi bi-plus"></i> 添加订阅
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>名称</th>
+                                        <th>节点数量</th>
+                                        <th>可用节点</th>
+                                        <th>上次更新</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="subscriptionList">
+                                    <!-- 订阅数据将通过JS动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-globe"></i> 节点状态</span>
+                        <div>
+                            <select class="form-select form-select-sm d-inline-block w-auto me-2" id="nodeFilter">
+                                <option value="all">全部节点</option>
+                                <option value="active">仅显示活跃节点</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" id="filterBtn">
+                                <i class="bi bi-filter"></i> 筛选
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover node-table">
+                                <thead>
+                                    <tr>
+                                        <th>名称</th>
+                                        <th>类型</th>
+                                        <th>地址</th>
+                                        <th>延迟</th>
+                                        <th>可用性</th>
+                                        <th>地区</th>
+                                        <th>ISP</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nodeList">
+                                    <!-- 节点数据将通过JS动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加订阅弹窗 -->
+    <div class="modal fade" id="addSubscriptionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加订阅</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="subscriptionForm">
+                        <div class="mb-3">
+                            <label for="subName" class="form-label">订阅名称</label>
+                            <input type="text" class="form-control" id="subName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subUrl" class="form-label">订阅地址</label>
+                            <input type="url" class="form-control" id="subUrl" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subType" class="form-label">订阅类型</label>
+                            <select class="form-select" id="subType" required>
+                                <option value="clash">Clash</option>
+                                <option value="v2ray">V2Ray</option>
+                                <option value="ss">Shadowsocks</option>
+                                <option value="ssr">ShadowsocksR</option>
+                                <option value="trojan">Trojan</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subRemarks" class="form-label">备注</label>
+                            <textarea class="form-control" id="subRemarks" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveSubBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 节点详情弹窗 -->
+    <div class="modal fade" id="nodeDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="nodeDetailTitle">节点详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>基本信息</h6>
+                                <table class="table table-sm">
+                                    <tbody id="nodeBasicInfo"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>API连通性</h6>
+                                <table class="table table-sm">
+                                    <tbody id="nodeApiInfo"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" id="testNodeBtn">测试节点</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="container">
+        <p>ShareSubWeb &copy; 2023-2025 | 版本: <span id="version">1.0.0</span></p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取当前配置
+            fetch('/api/config')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('version').textContent = data.version;
+                })
+                .catch(error => console.error('获取配置失败:', error));
+
+            // 加载订阅和节点数据
+            loadSubscriptions();
+            loadNodes();
+
+            // 刷新按钮事件
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                location.reload();
+            });
+
+            // 添加订阅按钮事件
+            document.getElementById('addSubBtn').addEventListener('click', function() {
+                const modal = new bootstrap.Modal(document.getElementById('addSubscriptionModal'));
+                modal.show();
+            });
+
+            // 保存订阅按钮事件
+            document.getElementById('saveSubBtn').addEventListener('click', function() {
+                const form = document.getElementById('subscriptionForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                const subscription = {
+                    name: document.getElementById('subName').value,
+                    url: document.getElementById('subUrl').value,
+                    type: document.getElementById('subType').value,
+                    remarks: document.getElementById('subRemarks').value
+                };
+
+                // 发送请求到后端添加订阅
+                fetch('/api/subscriptions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(subscription)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('添加失败: ' + data.error);
+                    } else {
+                        alert('添加订阅成功！');
+                        
+                        // 关闭弹窗并刷新数据
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('addSubscriptionModal'));
+                        modal.hide();
+                        
+                        // 重置表单
+                        document.getElementById('subscriptionForm').reset();
+                        
+                        // 刷新数据
+                        loadSubscriptions();
+                    }
+                })
+                .catch(error => {
+                    console.error('添加订阅失败:', error);
+                    alert('添加订阅失败，请检查网络或服务器状态');
+                });
+            });
+
+            // 筛选按钮事件
+            document.getElementById('filterBtn').addEventListener('click', function() {
+                loadNodes();
+            });
+
+            // 导航菜单点击事件
+            document.getElementById('homeLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                setActiveNavItem(this);
+            });
+
+            document.getElementById('subMgmtLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                setActiveNavItem(this);
+            });
+
+            document.getElementById('nodeMgmtLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                setActiveNavItem(this);
+            });
+
+            document.getElementById('settingsLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                setActiveNavItem(this);
+            });
+        });
+
+        // 设置当前活动的导航项
+        function setActiveNavItem(element) {
+            // 移除所有nav-link的active类
+            document.querySelectorAll('.nav-link').forEach(item => {
+                item.classList.remove('active');
+            });
+            // 设置当前点击项为active
+            element.classList.add('active');
+        }
+
+        // 加载订阅列表
+        function loadSubscriptions() {
+            fetch('/api/subscriptions')
+                .then(response => response.json())
+                .then(subscriptions => {
+                    document.getElementById('subCount').textContent = subscriptions.length;
+                    
+                    const subscriptionList = document.getElementById('subscriptionList');
+                    subscriptionList.innerHTML = '';
+                    
+                    if (subscriptions.length === 0) {
+                        subscriptionList.innerHTML = '<tr><td colspan="6" class="text-center">暂无订阅数据</td></tr>';
+                        return;
+                    }
+                    
+                    subscriptions.forEach(sub => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${sub.Name}</td>
+                            <td>${sub.TotalNodes || 0}</td>
+                            <td>${sub.ActiveNodes || 0}</td>
+                            <td>${sub.LastUpdate ? new Date(sub.LastUpdate).toLocaleString() : '未更新'}</td>
+                            <td><span class="badge bg-success status-badge">正常</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1 refresh-sub-btn" data-id="${sub.ID}" title="刷新">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-sub-btn" data-id="${sub.ID}" title="删除">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        subscriptionList.appendChild(row);
+                    });
+
+                    // 添加订阅操作按钮事件
+                    document.querySelectorAll('.refresh-sub-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const subId = this.getAttribute('data-id');
+                            refreshSubscription(subId);
+                        });
+                    });
+
+                    document.querySelectorAll('.delete-sub-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const subId = this.getAttribute('data-id');
+                            deleteSubscription(subId);
+                        });
+                    });
+                })
+                .catch(error => console.error('获取订阅列表失败:', error));
+        }
+
+        // 刷新订阅
+        function refreshSubscription(subId) {
+            fetch(`/api/subscriptions/${subId}/refresh`, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('刷新失败: ' + data.error);
+                } else {
+                    alert('刷新订阅成功！');
+                    // 刷新数据
+                    loadSubscriptions();
+                    loadNodes();
+                }
+            })
+            .catch(error => {
+                console.error('刷新订阅失败:', error);
+                alert('刷新订阅失败，请检查网络或服务器状态');
+            });
+        }
+
+        // 删除订阅
+        function deleteSubscription(subId) {
+            if (confirm('确定要删除此订阅吗？')) {
+                fetch(`/api/subscriptions/${subId}`, {
+                    method: 'DELETE',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('删除失败: ' + data.error);
+                    } else {
+                        alert('删除订阅成功！');
+                        // 刷新数据
+                        loadSubscriptions();
+                        loadNodes();
+                    }
+                })
+                .catch(error => {
+                    console.error('删除订阅失败:', error);
+                    alert('删除订阅失败，请检查网络或服务器状态');
+                });
+            }
+        }
+
+        // 加载节点列表
+        function loadNodes() {
+            fetch('/api/nodes')
+                .then(response => response.json())
+                .then(nodes => {
+                    document.getElementById('nodeCount').textContent = nodes.length;
+                    
+                    let activeNodes = nodes.filter(node => node.Active);
+                    document.getElementById('activeNodeCount').textContent = activeNodes.length;
+                    
+                    let availabilityRate = nodes.length > 0 
+                        ? Math.round(activeNodes.length / nodes.length * 100) 
+                        : 0;
+                    document.getElementById('availabilityRate').textContent = availabilityRate + '%';
+                    
+                    const nodeList = document.getElementById('nodeList');
+                    nodeList.innerHTML = '';
+                    
+                    if (nodes.length === 0) {
+                        nodeList.innerHTML = '<tr><td colspan="7" class="text-center">暂无节点数据</td></tr>';
+                        return;
+                    }
+                    
+                    // 应用筛选
+                    const filter = document.getElementById('nodeFilter').value;
+                    if (filter === 'active') {
+                        nodes = nodes.filter(node => node.Active);
+                    }
+                    
+                    nodes.forEach(node => {
+                        const row = document.createElement('tr');
+                        row.classList.add('node-row');
+                        row.dataset.node = JSON.stringify(node);
+                        row.innerHTML = `
+                            <td>${node.Name}</td>
+                            <td><span class="badge bg-secondary">${node.Type || '未知'}</span></td>
+                            <td>${node.Server}:${node.Port}</td>
+                            <td>${node.Active ? (node.Latency + 'ms') : '-'}</td>
+                            <td>
+                                ${node.Active 
+                                    ? '<span class="badge bg-success status-badge">可用</span>' 
+                                    : '<span class="badge bg-danger status-badge">不可用</span>'}
+                            </td>
+                            <td>${node.IPInfo ? (node.IPInfo.Country || '未知') : '未知'}</td>
+                            <td>${node.IPInfo ? (node.IPInfo.ISP || '未知') : '未知'}</td>
+                        `;
+                        nodeList.appendChild(row);
+                    });
+                    
+                    // 添加节点行点击事件
+                    document.querySelectorAll('.node-row').forEach(row => {
+                        row.addEventListener('click', function() {
+                            const node = JSON.parse(this.dataset.node);
+                            showNodeDetail(node);
+                        });
+                    });
+                })
+                .catch(error => console.error('获取节点列表失败:', error));
+        }
+
+        // 显示节点详情
+        function showNodeDetail(node) {
+            document.getElementById('nodeDetailTitle').textContent = node.Name;
+            
+            // 基本信息
+            const basicInfo = document.getElementById('nodeBasicInfo');
+            basicInfo.innerHTML = `
+                <tr><td>类型:</td><td>${node.Type || '未知'}</td></tr>
+                <tr><td>服务器:</td><td>${node.Server}</td></tr>
+                <tr><td>端口:</td><td>${node.Port}</td></tr>
+                <tr><td>延迟:</td><td>${node.Active ? (node.Latency + 'ms') : '不可用'}</td></tr>
+                <tr><td>国家/地区:</td><td>${node.IPInfo ? (node.IPInfo.Country || '未知') : '未知'}</td></tr>
+                <tr><td>ISP:</td><td>${node.IPInfo ? (node.IPInfo.ISP || '未知') : '未知'}</td></tr>
+                <tr><td>ASN:</td><td>${node.IPInfo ? (node.IPInfo.ASN || '未知') : '未知'}</td></tr>
+            `;
+            
+            // API连通性
+            const apiInfo = document.getElementById('nodeApiInfo');
+            apiInfo.innerHTML = '';
+            if (node.APIConnectivity) {
+                for (const [api, status] of Object.entries(node.APIConnectivity)) {
+                    apiInfo.innerHTML += `
+                        <tr>
+                            <td>${api}:</td>
+                            <td>
+                                ${status 
+                                    ? '<span class="badge bg-success">可访问</span>' 
+                                    : '<span class="badge bg-danger">不可访问</span>'}
+                            </td>
+                        </tr>
+                    `;
+                }
+            } else {
+                apiInfo.innerHTML = '<tr><td colspan="2">暂无API测试数据</td></tr>';
+            }
+            
+            // 显示弹窗
+            const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'));
+            modal.show();
+            
+            // 测试节点按钮事件
+            document.getElementById('testNodeBtn').onclick = function() {
+                testNode(node.ID);
+            };
+        }
+
+        // 测试节点
+        function testNode(nodeId) {
+            fetch(`/api/nodes/${nodeId}/test`, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('测试失败: ' + data.error);
+                } else {
+                    alert('节点测试完成');
+                    // 更新节点详情
+                    if (data.node) {
+                        showNodeDetail(data.node);
+                    }
+                    // 刷新节点列表
+                    loadNodes();
+                }
+            })
+            .catch(error => {
+                console.error('测试节点失败:', error);
+                alert('测试节点失败，请检查网络或服务器状态');
+            });
+        }
+    </script>
+</body>
+</html>
